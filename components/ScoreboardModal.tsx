@@ -27,7 +27,7 @@ export function ScoreboardModal({ state, onClose }: ScoreboardModalProps) {
           </div>
           <div>
             <h2 className="font-bangla text-xl font-extrabold leading-tight text-[#faf3e6] sm:text-2xl">
-              স্কোরবোর্ড — হান্ড্রেট{' '}
+              স্কোরবোর্ড — হানডেট{' '}
               <span className="text-[#e0a943]">HUNDRED</span>
             </h2>
             <p className="text-xs font-medium text-[#d7c4a3]">

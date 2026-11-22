@@ -39,9 +39,9 @@ const ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#232126" stroke="#e5b84b" stroke-width="4"/><text x="32" y="41" text-anchor="middle" font-family="serif" font-size="24" font-weight="bold" fill="#e5b84b">100</text></svg>';
 
 export const metadata: Metadata = {
-  title: "হান্ড্রেট HUNDRED",
+  title: "হানডেট HUNDRED",
   description:
-    "হান্ড্রেট (HUNDRED) — 4-player Bangladeshi tabletop card game with multiplayer sync and voice chat.",
+    "হানডেট (HUNDRED) — 4-player Bangladeshi tabletop card game with multiplayer sync and voice chat.",
   icons: {
     icon: `data:image/svg+xml,${encodeURIComponent(ICON_SVG)}`,
   },

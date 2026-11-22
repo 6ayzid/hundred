@@ -175,7 +175,7 @@ export function Lobby({
       <main className="glass-pill relative z-10 flex w-full max-w-xl flex-col items-center gap-5 rounded-3xl p-5 text-center sm:p-8">
         <header className="flex flex-col items-center">
           <h1 className="font-bangla text-4xl font-extrabold tracking-tight text-[#faf3e6] sm:text-5xl">
-            হান্ড্রেট <span className="text-[#e0a943]">HUNDRED</span>
+            হানডেট <span className="text-[#e0a943]">HUNDRED</span>
           </h1>
           <p className="mt-1.5 text-xs font-medium text-[#d8c7ae] sm:text-sm">
             4 Players • 10 Rounds • Holder of 1 starts • Min Call 50

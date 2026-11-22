@@ -85,7 +85,7 @@ describe('Lobby', () => {
       />,
     );
 
-    expect(screen.getByText(/হান্ড্রেট/)).toBeTruthy();
+    expect(screen.getByText(/হানডেট/)).toBeTruthy();
     expect(screen.getByText('HUNDRED')).toBeTruthy();
 
     fireEvent.click(screen.getByTestId('join-room-btn'));
@@ -100,7 +100,7 @@ describe('Lobby', () => {
 });
 
 describe('GameTable', () => {
-  it('renders হান্ড্রেট HUNDRED, স্কোরবোর্ড modal, transient bidding (min 50), and dispatches PLACE_CALL', () => {
+  it('renders হানডেট HUNDRED, স্কোরবোর্ড modal, transient bidding (min 50), and dispatches PLACE_CALL', () => {
     const state = createBiddingState();
     const onDispatchAction = vi.fn();
 
@@ -128,7 +128,7 @@ describe('GameTable', () => {
       />,
     );
 
-    expect(screen.getByText('হান্ড্রেট')).toBeTruthy();
+    expect(screen.getByText('হানডেট')).toBeTruthy();
     expect(screen.getByText('HUNDRED')).toBeTruthy();
     expect(screen.getByTestId('arena-status-pill').textContent).toContain('Round 1/10');
     expect(screen.queryByTestId('quick-call-0')).toBeNull();

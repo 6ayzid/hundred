@@ -486,7 +486,7 @@ export function GameTable({
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2 md:gap-4">
           <div className="flex shrink-0 flex-col leading-none">
             <h1 className="font-bangla text-lg font-extrabold tracking-tight text-[#faf3e6] sm:text-xl md:text-3xl">
-              হান্ড্রেট
+              হানডেট
             </h1>
             <span className="text-[9px] font-bold tracking-[0.16em] text-[#e0a943] sm:text-[10px] md:text-xs">
               HUNDRED
@@ -974,7 +974,7 @@ export function GameTable({
             <div className="mb-5 flex flex-col items-center text-center">
               <Trophy className="mb-2 h-10 w-10 text-amber-300" />
               <h2 className="font-bangla text-2xl font-extrabold text-[#faf3e6]">
-                হান্ড্রেট <span className="text-[#e0a943]">HUNDRED</span>
+                হানডেট <span className="text-[#e0a943]">HUNDRED</span>
               </h2>
               {matchRankings[0] && (
                 <p className="mt-1.5 text-sm text-[#e6d5b8]">

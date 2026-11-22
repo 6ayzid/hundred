@@ -132,8 +132,8 @@ describe(".env.example and README.md contracts", () => {
     const readmePath = path.resolve(process.cwd(), "README.md");
     const contents = fs.readFileSync(readmePath, "utf8");
 
-    expect(contents).toContain("# হান্ড্রেট HUNDRED");
-    expect(contents).toContain("হান্ড্রেট");
+    expect(contents).toContain("# হানডেট HUNDRED");
+    expect(contents).toContain("হানডেট");
     expect(contents).toContain("HUNDRED");
     expect(contents).toContain("eksho:${roomCode}");
     expect(contents).toContain("eksho_state_${roomCode}");

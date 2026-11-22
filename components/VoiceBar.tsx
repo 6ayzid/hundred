@@ -615,7 +615,11 @@ export function VoiceBar({
             audio={AUDIO_CAPTURE_DEFAULTS}
             video={false}
             options={roomOptions}
-            onError={() => {
+            onError={(err) => {
+              const msg = err instanceof Error ? `${err.name} ${err.message}` : String(err ?? '');
+              if (/NotFoundError|NotAllowedError|Permission|Device|Overconstrained|AbortError/i.test(msg)) {
+                return;
+              }
               setTokenState({ key: requestKey, token: null, failed: true });
             }}
           >
@@ -885,7 +889,11 @@ export function VoiceBar({
           audio={AUDIO_CAPTURE_DEFAULTS}
           video={false}
           options={roomOptions}
-          onError={() => {
+          onError={(err) => {
+            const msg = err instanceof Error ? `${err.name} ${err.message}` : String(err ?? '');
+            if (/NotFoundError|NotAllowedError|Permission|Device|Overconstrained|AbortError/i.test(msg)) {
+              return;
+            }
             setTokenState({ key: requestKey, token: null, failed: true });
           }}
         >

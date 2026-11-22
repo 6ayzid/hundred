@@ -39,7 +39,7 @@ async function HomeShell({ searchParams }: HomePageProps) {
 function HomeFallback() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-[#160e08] text-[#faf3e6]">
-      <span className="font-bangla text-lg">হান্ড্রেট HUNDRED লোড হচ্ছে…</span>
+      <span className="font-bangla text-lg">হানডেট HUNDRED লোড হচ্ছে…</span>
     </div>
   );
 }
