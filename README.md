@@ -1,6 +1,6 @@
-# হান্ডেট (Hundred)
+# হান্ড্রেট HUNDRED
 
-**হান্ডেট (Hundred)** (Bangla: **হান্ডেট**, English: **Hundred**) is a 4-player UNO-inspired Bangladeshi top-down flat-lay multiplayer trick-taking card game with serverless Supabase Realtime host failover and LiveKit voice chat.
+**হান্ড্রেট HUNDRED** (Bangla: **হান্ড্রেট**, English: **Hundred**) is a 4-player UNO-inspired Bangladeshi top-down flat-lay multiplayer trick-taking card game with serverless Supabase Realtime host failover and LiveKit voice chat.
 
 ## Game Overview & Rules
 

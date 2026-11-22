@@ -355,26 +355,14 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
         Date.now(),
       );
       state = applyAction(state, { type: 'FILL_BOTS_AND_START' }, Date.now());
-      state = applyAction(
-        state,
-        { type: 'PLACE_CALL', seatIndex: 0, call: 150 },
-        Date.now(),
-      );
-      state = applyAction(
-        state,
-        { type: 'PLACE_CALL', seatIndex: 1, call: 100 },
-        Date.now(),
-      );
-      state = applyAction(
-        state,
-        { type: 'PLACE_CALL', seatIndex: 2, call: 100 },
-        Date.now(),
-      );
-      state = applyAction(
-        state,
-        { type: 'PLACE_CALL', seatIndex: 3, call: 100 },
-        Date.now(),
-      );
+      for (let i = 0; i < 4; i += 1) {
+        const s = state.activeSeat;
+        state = applyAction(
+          state,
+          { type: 'PLACE_CALL', seatIndex: s, call: s === 0 ? 150 : 100 },
+          Date.now(),
+        );
+      }
 
       const highVersionMidMatch: GameState = {
         ...state,
@@ -695,6 +683,12 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       });
 
       expect(result.current.state?.phase).toBe('BIDDING');
+      // If an AI bot holds card 1, let bots before Seat 0 call first
+      for (let guard = 0; guard < 3 && result.current.state?.activeSeat !== 0; guard += 1) {
+        act(() => {
+          vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
+        });
+      }
       expect(result.current.state?.activeSeat).toBe(0);
       expect(result.current.state?.seats[0].call).toBeNull();
 
@@ -705,22 +699,26 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       expect(result.current.state?.seats[0].call).toBeNull();
       expect(result.current.state?.activeSeat).toBe(0);
 
-      // Advance remaining 5s (total 25_000ms): Seat 0 auto-calls 50 and turn moves to Bot 1
+      // Advance remaining 5s (total 25_000ms): Seat 0 auto-calls 50
       act(() => {
         vi.advanceTimersByTime(5_100);
       });
       expect(result.current.state?.seats[0].call).toBe(50);
-      expect(result.current.state?.activeSeat).toBe(1);
 
-      // Step through 3 AI bot calls (650ms each)
-      for (let botStep = 0; botStep < 3; botStep += 1) {
+      // Step through any remaining AI bot calls (650ms each) until PLAYING
+      for (let botStep = 0; botStep < 4 && result.current.state?.phase === 'BIDDING'; botStep += 1) {
         act(() => {
           vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
         });
       }
 
-      // Now in PLAYING phase with activeSeat === 0
       expect(result.current.state?.phase).toBe('PLAYING');
+      // Let any AI bots leading before Seat 0 play first
+      for (let guard = 0; guard < 3 && result.current.state?.activeSeat !== 0; guard += 1) {
+        act(() => {
+          vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
+        });
+      }
       expect(result.current.state?.activeSeat).toBe(0);
       const initialHand = [...result.current.state!.seats[0].hand];
       const lowestCard = Math.min(...initialHand);
@@ -738,13 +736,13 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       });
       expect(result.current.state?.seats[0].hand).toHaveLength(4);
       expect(result.current.state?.seats[0].hand).not.toContain(lowestCard);
-      expect(result.current.state?.currentTrick[0]).toEqual({
+      expect(result.current.state?.currentTrick).toContainEqual({
         seatIndex: 0,
         card: lowestCard,
       });
 
-      // Let 3 AI bots play their Trick 1 cards
-      for (let botStep = 0; botStep < 3; botStep += 1) {
+      // Let remaining AI bots play their Trick 1 cards until TRICK_COMPLETE
+      for (let botStep = 0; botStep < 3 && result.current.state?.phase === 'PLAYING'; botStep += 1) {
         act(() => {
           vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
         });
@@ -881,24 +879,24 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       expect(result.current.hostSeatIndex).toBe(0);
       expect(result.current.isHost).toBe(false);
       expect(result.current.state?.phase).toBe('BIDDING');
-      expect(result.current.state?.activeSeat).toBe(0);
+      const stalledSeat = result.current.state!.activeSeat;
 
       // Advance to turnDeadline + 1500ms (< turnDeadline + 2500ms): Backup Seat 1 must NOT intervene yet
       act(() => {
         vi.advanceTimersByTime(BID_TIMEOUT_MS + 1_500);
       });
       expect(result.current.isHost).toBe(false);
-      expect(result.current.state?.seats[0].call).toBeNull();
+      expect(result.current.state?.seats[stalledSeat].call).toBeNull();
 
-      // Advance past turnDeadline + HOST_STALL_GRACE_MS (2500ms): Seat 1 self-promotes, resolves Seat 0's bid timeout to 50, persists, and broadcasts STATE_SNAPSHOT
+      // Advance past turnDeadline + HOST_STALL_GRACE_MS (2500ms): Seat 1 self-promotes, resolves bid timeout to 50, persists, and broadcasts STATE_SNAPSHOT
       act(() => {
         vi.advanceTimersByTime(HOST_STALL_GRACE_MS - 1_500 + 250);
       });
 
       expect(result.current.isHost).toBe(true);
       expect(result.current.hostSeatIndex).toBe(1);
-      expect(result.current.state?.seats[0].call).toBe(50);
-      expect(result.current.state?.activeSeat).toBe(1);
+      expect(result.current.state?.seats[stalledSeat].call).toBe(50);
+      expect(result.current.state?.activeSeat).toBe((stalledSeat + 1) % 4);
 
       expect(channel.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -912,8 +910,8 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       );
 
       const storedAfterFailover = loadCachedGameState('TNG-WD99');
-      expect(storedAfterFailover?.seats[0].call).toBe(50);
-      expect(storedAfterFailover?.activeSeat).toBe(1);
+      expect(storedAfterFailover?.seats[stalledSeat].call).toBe(50);
+      expect(storedAfterFailover?.activeSeat).toBe((stalledSeat + 1) % 4);
     });
   });
 });

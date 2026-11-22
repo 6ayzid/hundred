@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {
   ArrowDown,
   ArrowLeft,
@@ -12,7 +18,42 @@ import {
   Plus,
   RotateCcw,
   Trophy,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
+import { PlayingCard } from '@/components/PlayingCard';
+import { ScoreboardModal } from '@/components/ScoreboardModal';
+import { SeatHub, type HubPosition } from '@/components/SeatHub';
+import { VoiceBar } from '@/components/VoiceBar';
+import {
+  CALL_STEP,
+  getMatchRankings,
+  MAX_CALL,
+  MIN_CALL,
+  TOTAL_ROUNDS,
+} from '@/lib/gameEngine';
+import {
+  isSfxMuted,
+  playCallSound,
+  playCardSound,
+  playChatSound,
+  playRoundSummarySound,
+  playShuffleSound,
+  playTrickWinSound,
+  setSfxMuted,
+  unlockAudio,
+} from '@/lib/soundEngine';
+import {
+  QUICK_CALL_VALUES,
+  type CardValue,
+  type ChatMessage,
+  type ConnectionStatus,
+  type GameAction,
+  type GameState,
+  type SeatIndex,
+  type SpeakingMap,
+  type SyncMode,
+} from '@/lib/types';
 
 function subscribeDesktopMedia(callback: () => void): () => void {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};
@@ -29,28 +70,6 @@ function getDesktopMediaSnapshot(): boolean {
 function getDesktopMediaServerSnapshot(): boolean {
   return true;
 }
-import { PlayingCard } from '@/components/PlayingCard';
-import { ScoreboardModal } from '@/components/ScoreboardModal';
-import { SeatHub, type HubPosition } from '@/components/SeatHub';
-import { VoiceBar } from '@/components/VoiceBar';
-import {
-  CALL_STEP,
-  getMatchRankings,
-  MAX_CALL,
-  MIN_CALL,
-  TOTAL_ROUNDS,
-} from '@/lib/gameEngine';
-import {
-  QUICK_CALL_VALUES,
-  type CardValue,
-  type ChatMessage,
-  type ConnectionStatus,
-  type GameAction,
-  type GameState,
-  type SeatIndex,
-  type SpeakingMap,
-  type SyncMode,
-} from '@/lib/types';
 
 export interface GameTableProps {
   state: GameState;
@@ -103,6 +122,8 @@ export function GameTable({
   const [scoreboardOpen, setScoreboardOpen] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [dealingRound, setDealingRound] = useState<number | null>(null);
+  const [sfxMuted, setSfxMutedState] = useState<boolean>(() => isSfxMuted());
+
   const isDesktop = useSyncExternalStore(
     subscribeDesktopMedia,
     getDesktopMediaSnapshot,
@@ -111,6 +132,55 @@ export function GameTable({
 
   const scanSet = useMemo(() => new Set(availableCardScans), [availableCardScans]);
 
+  // Tactile Web Audio SFX synced to real game state transitions
+  const prevTrickLenRef = useRef<number>(state.currentTrick.length);
+  const prevPhaseRef = useRef<GameState['phase']>(state.phase);
+  const prevRoundRef = useRef<number>(state.round);
+  const prevCallsCountRef = useRef<number>(
+    state.seats.filter((s) => s.call !== null).length,
+  );
+  const prevChatLenRef = useRef<number>(chatMessages.length);
+
+  useEffect(() => {
+    const callsCount = state.seats.filter((s) => s.call !== null).length;
+
+    if (state.round !== prevRoundRef.current && state.phase === 'BIDDING') {
+      playShuffleSound();
+    } else if (callsCount > prevCallsCountRef.current) {
+      playCallSound();
+    }
+
+    if (state.currentTrick.length > prevTrickLenRef.current) {
+      playCardSound();
+    }
+
+    if (
+      state.phase === 'TRICK_COMPLETE' &&
+      prevPhaseRef.current !== 'TRICK_COMPLETE'
+    ) {
+      playTrickWinSound();
+    }
+
+    if (
+      (state.phase === 'ROUND_SUMMARY' || state.phase === 'MATCH_OVER') &&
+      prevPhaseRef.current !== state.phase
+    ) {
+      playRoundSummarySound();
+    }
+
+    prevTrickLenRef.current = state.currentTrick.length;
+    prevPhaseRef.current = state.phase;
+    prevRoundRef.current = state.round;
+    prevCallsCountRef.current = callsCount;
+  }, [state]);
+
+  useEffect(() => {
+    if (chatMessages.length > prevChatLenRef.current) {
+      playChatSound();
+    }
+    prevChatLenRef.current = chatMessages.length;
+  }, [chatMessages.length]);
+
   useEffect(() => {
     if (state.phase === 'BIDDING') {
       const startTimer = window.setTimeout(() => {
@@ -118,7 +188,7 @@ export function GameTable({
       }, 0);
       const endTimer = window.setTimeout(() => {
         setDealingRound(null);
-      }, 650);
+      }, 600);
       return () => {
         window.clearTimeout(startTimer);
         window.clearTimeout(endTimer);
@@ -126,6 +196,16 @@ export function GameTable({
     }
     return undefined;
   }, [state.phase, state.round]);
+
+  const toggleSfx = () => {
+    unlockAudio();
+    const next = !sfxMuted;
+    setSfxMuted(next);
+    setSfxMutedState(next);
+    if (!next) {
+      playCallSound();
+    }
+  };
 
   const perspectiveSeat: SeatIndex = mySeatIndex ?? 0;
 
@@ -195,6 +275,7 @@ export function GameTable({
   };
 
   const submitCall = (value: number) => {
+    unlockAudio();
     if (mySeatIndex === null) return;
     const clamped = Math.max(MIN_CALL, Math.min(MAX_CALL, value));
     onDispatchAction({
@@ -205,6 +286,7 @@ export function GameTable({
   };
 
   const handlePlayCard = (card: CardValue) => {
+    unlockAudio();
     if (mySeatIndex === null || !isMyTurn || state.phase !== 'PLAYING') return;
     onDispatchAction({
       type: 'PLAY_CARD',
@@ -232,8 +314,8 @@ export function GameTable({
         aria-label={`${slotName} slot`}
         className={
           compact
-            ? 'flex h-[52px] w-[82px] items-center justify-center'
-            : 'flex h-[82px] w-[130px] items-center justify-center lg:h-[90px] lg:w-[146px]'
+            ? 'flex h-[44px] w-[62px] items-center justify-center sm:h-[48px] sm:w-[70px]'
+            : 'flex h-[82px] w-[130px] items-center justify-center lg:h-[88px] lg:w-[142px]'
         }
       >
         {playedCard !== undefined && (
@@ -242,7 +324,11 @@ export function GameTable({
               value={playedCard}
               orientation="landscape"
               size={compact ? 'sm' : 'md'}
-              className={compact ? '!h-[50px] !w-[78px] !text-[28px]' : ''}
+              className={
+                compact
+                  ? '!h-[42px] !w-[60px] !text-[22px] sm:!h-[46px] sm:!w-[68px] sm:!text-[24px]'
+                  : ''
+              }
               useCustomScan={scanSet.has(playedCard)}
               highlighted={isWinner}
               ariaLabel={`${seat.username} played ${playedCard}`}
@@ -257,66 +343,66 @@ export function GameTable({
     <div
       aria-label={`Active turn: ${activeSeatObj.username}`}
       data-testid={compact ? undefined : 'turn-compass'}
-      className={`relative flex items-center justify-center rounded-full border-2 border-amber-300/55 bg-black/15 shadow-[0_0_24px_rgba(251,191,36,0.38),inset_0_0_16px_rgba(251,191,36,0.16)] ${
-        compact ? 'h-12 w-12' : 'h-16 w-16 lg:h-20 lg:w-20'
+      className={`relative flex items-center justify-center rounded-full border border-amber-300/45 bg-black/20 ${
+        compact ? 'h-9 w-9 sm:h-10 sm:w-10' : 'h-16 w-16'
       }`}
     >
       <ArrowUp
-        className={`absolute top-1 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
+        className={`absolute top-0.5 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'top'
-            ? 'scale-125 text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,1)]'
+            ? 'scale-110 text-amber-300'
             : 'text-amber-100/20'
         }`}
       />
       <ArrowLeft
-        className={`absolute left-1 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
+        className={`absolute left-0.5 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'left'
-            ? 'scale-125 text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,1)]'
+            ? 'scale-110 text-amber-300'
             : 'text-amber-100/20'
         }`}
       />
       <ArrowRight
-        className={`absolute right-1 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
+        className={`absolute right-0.5 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'right'
-            ? 'scale-125 text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,1)]'
+            ? 'scale-110 text-amber-300'
             : 'text-amber-100/20'
         }`}
       />
       <ArrowDown
-        className={`absolute bottom-1 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
+        className={`absolute bottom-0.5 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'bottom-left'
-            ? 'scale-125 text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,1)]'
+            ? 'scale-110 text-amber-300'
             : 'text-amber-100/20'
         }`}
       />
-      <span className="h-2 w-2 rounded-full bg-amber-300/85 shadow-[0_0_10px_rgba(251,191,36,0.95)]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" />
     </div>
   );
 
   const biddingCard = (
     <div
       data-testid="bidding-tray"
-      className="glass-pill w-[308px] rounded-3xl border-amber-300/40 p-4 text-center shadow-[0_24px_60px_rgba(0,0,0,0.85)] sm:w-[390px] sm:p-5"
+      className="glass-pill w-full max-w-[360px] rounded-2xl border-amber-300/35 p-4 text-center shadow-2xl"
     >
-      <div className="text-sm font-bold tracking-wide text-amber-200 sm:text-base">
+      <div className="text-xs font-bold tracking-wide text-amber-200 sm:text-sm">
         {isMyTurn
           ? 'Declare Your Call (50 – 500)'
           : `Waiting for ${activeSeatObj.username} to call…`}
       </div>
 
       {isMyTurn && (
-        <div className="mt-3.5 space-y-3.5">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-4 gap-1.5">
             {QUICK_CALL_VALUES.map((val) => (
               <button
                 key={val}
                 type="button"
                 onClick={() => submitCall(val)}
                 data-testid={`quick-call-${val}`}
-                className={`rounded-xl border py-2 text-sm font-extrabold transition ${
+                className={`rounded-xl border py-1.5 text-xs font-bold transition sm:text-sm ${
                   selectedCall === val
-                    ? 'border-amber-300 bg-amber-400 text-[#1b1108] shadow-[0_0_14px_rgba(251,191,36,0.5)]'
-                    : 'border-white/15 bg-white/10 text-[#faf3e6] hover:border-amber-300/60 hover:bg-amber-400 hover:text-[#1b1108]'
+                    ? 'border-amber-300 bg-amber-400 text-[#1b1108]'
+                    : 'border-white/15 bg-white/10 text-[#faf3e6] hover:bg-amber-400 hover:text-[#1b1108]'
                 }`}
               >
                 {val}
@@ -324,7 +410,7 @@ export function GameTable({
             ))}
           </div>
 
-          <div className="space-y-2.5 rounded-2xl border border-white/10 bg-black/35 px-3.5 py-3">
+          <div className="space-y-2 rounded-xl border border-white/10 bg-black/35 px-3 py-2.5">
             <input
               type="range"
               min={MIN_CALL}
@@ -342,12 +428,12 @@ export function GameTable({
                   setSelectedCall((c) => Math.max(MIN_CALL, c - CALL_STEP))
                 }
                 aria-label="Decrease call by 10"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-amber-200 transition hover:bg-white/20"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-amber-200 hover:bg-white/20"
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-3.5 w-3.5" />
               </button>
 
-              <span className="text-xl font-black tracking-tight text-white">
+              <span className="text-lg font-extrabold text-white">
                 {selectedCall}
               </span>
 
@@ -357,18 +443,18 @@ export function GameTable({
                   setSelectedCall((c) => Math.min(MAX_CALL, c + CALL_STEP))
                 }
                 aria-label="Increase call by 10"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-amber-200 transition hover:bg-white/20"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-amber-200 hover:bg-white/20"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
               </button>
 
               <button
                 type="button"
                 onClick={() => submitCall(selectedCall)}
                 data-testid="submit-custom-call"
-                className="ml-1 flex-1 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-4 py-2 text-sm font-extrabold text-[#1b1108] shadow-lg transition hover:from-amber-200 hover:to-amber-400"
+                className="ml-1 flex-1 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-extrabold text-[#1b1108] hover:bg-amber-300 sm:text-sm"
               >
-                Confirm Call
+                Confirm
               </button>
             </div>
           </div>
@@ -382,14 +468,10 @@ export function GameTable({
       data-testid="game-table-root"
       data-rain-paused={lowDataMode ? 'true' : 'false'}
       data-phase={state.phase}
-      className="pati-table-surface relative min-h-screen w-full overflow-hidden select-none md:fixed md:inset-0 md:h-dvh md:min-h-[680px]"
+      onPointerDown={() => unlockAudio()}
+      className="pati-table-surface fixed inset-0 flex h-dvh w-full flex-col overflow-hidden select-none"
     >
-      {/* Atmospheric layers: subtle edge vignette, warm flickering kupibati glow, edge-masked rain */}
-      <div aria-hidden="true" className="table-vignette absolute inset-0" />
-      <div
-        aria-hidden="true"
-        className="lantern-ambient-flicker absolute inset-0"
-      />
+      {/* Subtle rain streaks along edges */}
       <div
         aria-hidden="true"
         data-testid="rain-overlay"
@@ -399,57 +481,65 @@ export function GameTable({
         } ${lowDataMode ? 'rain-paused' : ''}`}
       />
 
-      {/* TOP HEADER BAR (Shared Desktop & Mobile) */}
-      <header className="relative z-30 flex items-start justify-between px-3.5 pt-3 md:absolute md:inset-x-0 md:top-0 md:px-7 md:pt-4 md:pointer-events-none">
-        <div className="flex items-center gap-2.5 md:pointer-events-auto md:gap-5">
-          <div className="flex flex-col leading-none">
-            <h1 className="title-gold-3d font-bangla text-[26px] font-extrabold leading-[0.95] md:text-[42px]">
-              একশো
+      {/* TOP HEADER BAR */}
+      <header className="relative z-30 flex shrink-0 items-center justify-between gap-1 px-2 py-2 sm:gap-2 sm:px-3 sm:py-2.5 md:px-6 md:py-3">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2 md:gap-4">
+          <div className="flex shrink-0 flex-col leading-none">
+            <h1 className="font-bangla text-lg font-extrabold tracking-tight text-[#faf3e6] sm:text-xl md:text-3xl">
+              হান্ড্রেট
             </h1>
-            <span className="title-gold-3d -mt-0.5 text-[13px] font-black tracking-[0.07em] md:text-[22px]">
+            <span className="text-[9px] font-bold tracking-[0.16em] text-[#e0a943] sm:text-[10px] md:text-xs">
               HUNDRED
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 self-start pt-1 md:gap-2 md:pt-1.5">
-            <span
-              data-testid="arena-status-pill"
-              className="glass-pill whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide text-[#faf3e6] md:px-4 md:py-1.5 md:text-[15px]"
-            >
-              Round {state.round}/{TOTAL_ROUNDS}
-            </span>
+          <span
+            data-testid="arena-status-pill"
+            className="glass-pill whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold text-[#faf3e6] sm:px-2.5 sm:py-1 sm:text-[11px] md:px-3.5 md:py-1.5 md:text-xs"
+          >
+            Round {state.round}/{TOTAL_ROUNDS}
+          </span>
 
-            {remainingSeconds !== null &&
-              (state.phase === 'BIDDING' || state.phase === 'PLAYING') && (
-                <span
-                  data-testid="shot-clock"
-                  className={`glass-pill inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold md:px-2.5 md:py-1.5 md:text-xs ${
-                    remainingSeconds <= 5
-                      ? '!border-red-400/70 text-red-200'
-                      : 'text-amber-200'
-                  }`}
-                >
-                  <Clock className="h-3 w-3 md:h-3.5 md:w-3.5" aria-hidden="true" />
-                  <span>{remainingSeconds}s</span>
-                </span>
-              )}
-          </div>
+          {remainingSeconds !== null &&
+            (state.phase === 'BIDDING' || state.phase === 'PLAYING') && (
+              <span
+                data-testid="shot-clock"
+                className={`glass-pill inline-flex items-center gap-0.5 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold sm:gap-1 sm:px-2 sm:py-1 sm:text-[11px] md:px-2.5 md:py-1.5 md:text-xs ${
+                  remainingSeconds <= 5
+                    ? '!border-red-400/70 text-red-200'
+                    : 'text-amber-200'
+                }`}
+              >
+                <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" aria-hidden="true" />
+                <span>{remainingSeconds}s</span>
+              </span>
+            )}
         </div>
 
-        <div className="flex items-center gap-1.5 pt-0.5 md:pointer-events-auto md:gap-2 md:pt-1">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-2">
+          {/* Tactile Audio SFX Toggle */}
+          <button
+            type="button"
+            onClick={toggleSfx}
+            aria-label={sfxMuted ? 'Unmute sound effects' : 'Mute sound effects'}
+            title={sfxMuted ? 'Sound OFF' : 'Sound ON'}
+            data-testid="sfx-toggle-btn"
+            className="glass-pill inline-flex h-7 w-7 items-center justify-center rounded-full text-[#e8d9c0] transition hover:text-amber-300 sm:h-8 sm:w-8 md:h-9 md:w-9"
+          >
+            {sfxMuted ? (
+              <VolumeX className="h-3.5 w-3.5 opacity-60 md:h-4 md:w-4" />
+            ) : (
+              <Volume2 className="h-3.5 w-3.5 text-amber-300 md:h-4 md:w-4" />
+            )}
+          </button>
+
           <button
             type="button"
             onClick={() => setScoreboardOpen(true)}
             data-testid="scoreboard-btn"
-            className="glass-pill group inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-bangla text-xs font-bold text-[#faf3e6] transition hover:border-amber-300/60 hover:text-amber-200 md:gap-2.5 md:px-4 md:text-base"
+            className="glass-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 font-bangla text-[11px] font-bold text-[#faf3e6] transition hover:border-amber-300/50 hover:text-amber-200 sm:px-3 sm:py-1.5 sm:text-xs md:px-4 md:text-sm"
           >
             <span>স্কোরবোর্ড</span>
-            <span
-              aria-hidden="true"
-              className="inline-flex h-4 w-7 items-center rounded-full border border-white/25 bg-white/15 p-0.5 transition group-hover:bg-amber-400/30 md:h-5 md:w-9"
-            >
-              <span className="h-3 w-3 rounded-full bg-[#f8f3e8] shadow md:h-3.5 md:w-3.5" />
-            </span>
           </button>
 
           <button
@@ -458,7 +548,7 @@ export function GameTable({
             data-testid="leave-room-btn"
             title="Leave Room"
             aria-label="Leave Room"
-            className="glass-pill inline-flex h-8 w-8 items-center justify-center rounded-full text-[#f0dfc2] transition hover:border-red-400/50 hover:text-red-200 md:h-9 md:w-9"
+            className="glass-pill inline-flex h-7 w-7 items-center justify-center rounded-full text-[#f0dfc2] transition hover:border-red-400/50 hover:text-red-200 sm:h-8 sm:w-8 md:h-9 md:w-9"
           >
             <LogOut className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden="true" />
           </button>
@@ -467,11 +557,14 @@ export function GameTable({
 
       {isDesktop ? (
         /* ================================================================
-           DESKTOP 16:9 FLAT-LAY TABLETOP
+           DESKTOP TABLETOP (>= 768px)
            ================================================================ */
-        <div>
-          {/* TOP CENTER (Nabil) — Avatar mathematically centered above North card */}
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2">
+        <div className="relative flex-1 px-6 pb-4">
+          {/* Clean Handwoven Inner Pati Mat */}
+          <div className="pati-inner-mat pointer-events-none absolute inset-x-16 inset-y-4 rounded-3xl" />
+
+          {/* Top Center Seat */}
+          <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2">
             <SeatHub
               seat={seatByPos.top}
               position="top"
@@ -485,8 +578,8 @@ export function GameTable({
             />
           </div>
 
-          {/* LEFT CENTER (Siam) */}
-          <div className="absolute left-6 top-[45%] z-20 -translate-y-1/2 lg:left-8">
+          {/* Left Center Seat */}
+          <div className="absolute left-6 top-[44%] z-20 -translate-y-1/2">
             <SeatHub
               seat={seatByPos.left}
               position="left"
@@ -500,8 +593,8 @@ export function GameTable({
             />
           </div>
 
-          {/* RIGHT CENTER (Apon) */}
-          <div className="absolute right-6 top-[45%] z-20 -translate-y-1/2 lg:right-8">
+          {/* Right Center Seat */}
+          <div className="absolute right-6 top-[44%] z-20 -translate-y-1/2">
             <SeatHub
               seat={seatByPos.right}
               position="right"
@@ -515,8 +608,8 @@ export function GameTable({
             />
           </div>
 
-          {/* BOTTOM-LEFT CORNER (Rafiq / Me) */}
-          <div className="absolute bottom-5 left-6 z-20 lg:left-8">
+          {/* Bottom-Left Seat (Me) */}
+          <div className="absolute bottom-4 left-6 z-20">
             <SeatHub
               seat={seatByPos['bottom-left']}
               position="bottom-left"
@@ -530,11 +623,11 @@ export function GameTable({
             />
           </div>
 
-          {/* CENTER PLAY ZONE */}
+          {/* Center Play Zone */}
           <section
             aria-label="Center Play Zone"
             data-testid="center-trick-arena"
-            className="absolute left-1/2 top-[46%] z-10 -translate-x-1/2 -translate-y-1/2"
+            className="absolute left-1/2 top-[45%] z-10 -translate-x-1/2 -translate-y-1/2"
           >
             {dealingRound !== null && (
               <div
@@ -571,32 +664,32 @@ export function GameTable({
             )}
           </section>
 
-          {/* BOTTOM-CENTER: LARGE SWEPT CURVED ARC HAND */}
+          {/* Bottom-Center Fanned Local Hand */}
           <div
             aria-label="Your hand"
             data-testid="player-hand"
-            className="pointer-events-none absolute bottom-1 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-end justify-center"
+            className="pointer-events-none absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-end justify-center"
           >
             {mySeat.hand.map((card, idx) => {
               const count = mySeat.hand.length;
               const center = (count - 1) / 2;
               const offset = idx - center;
-              const rot = offset * 5.2;
-              const yOffset = Math.abs(offset) * Math.abs(offset) * 5.5;
+              const rot = offset * 4.8;
+              const yOffset = Math.abs(offset) * Math.abs(offset) * 4.5;
 
               return (
                 <div
                   key={card}
                   style={{
                     transform: `rotate(${rot}deg) translateY(${yOffset}px)`,
-                    marginLeft: idx === 0 ? 0 : -16,
+                    marginLeft: idx === 0 ? 0 : -14,
                     zIndex: 10 + idx,
                   }}
-                  className="pointer-events-auto origin-bottom transition-all duration-200 hover:z-40"
+                  className="pointer-events-auto origin-bottom transition-all duration-150 hover:z-40"
                 >
                   <div
                     className="animate-deal-fan-in"
-                    style={{ animationDelay: `${idx * 55}ms` }}
+                    style={{ animationDelay: `${idx * 45}ms` }}
                   >
                     <PlayingCard
                       value={card}
@@ -613,8 +706,8 @@ export function GameTable({
             })}
           </div>
 
-          {/* BOTTOM-RIGHT COMPACT DOCK */}
-          <div className="absolute bottom-5 right-6 z-30 lg:right-8">
+          {/* Bottom-Right Compact Dock */}
+          <div className="absolute bottom-4 right-6 z-30">
             <VoiceBar
               compact
               roomCode={state.roomCode}
@@ -635,11 +728,13 @@ export function GameTable({
         </div>
       ) : (
         /* ================================================================
-           MOBILE PORTRAIT LAYOUT (< md) — ZERO OVERLAP GUARANTEED
+           TRUE 4-EDGE MOBILE CARD TABLE LAYOUT (< 768px)
+           North at top, West on far-left, East on far-right, Center cross in middle,
+           Me + slim dock above large thumb-friendly hand!
            ================================================================ */
-        <div className="relative z-10 flex min-h-[calc(100vh-58px)] flex-col justify-between gap-2 px-3 pb-3 pt-2">
-          {/* Top Opponent */}
-          <div className="flex justify-center">
+        <div className="relative z-10 flex flex-1 flex-col justify-between overflow-hidden px-2 pb-2">
+          {/* NORTH SEAT (Top Center) */}
+          <div className="flex shrink-0 justify-center py-0.5">
             <SeatHub
               compactMobile
               seat={seatByPos.top}
@@ -654,44 +749,31 @@ export function GameTable({
             />
           </div>
 
-          {/* Left & Right Opponents Strip */}
-          <div className="flex items-center justify-between gap-2">
-            <SeatHub
-              compactMobile
-              seat={seatByPos.left}
-              position="left"
-              isMe={mySeatIndex === seatByPos.left.seatIndex}
-              isHost={hostSeatIndex === seatByPos.left.seatIndex}
-              isActiveTurn={
-                (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                state.activeSeat === seatByPos.left.seatIndex
-              }
-              isSpeaking={isSeatSpeaking(seatByPos.left.clientId)}
-            />
-            <SeatHub
-              compactMobile
-              seat={seatByPos.right}
-              position="right"
-              isMe={mySeatIndex === seatByPos.right.seatIndex}
-              isHost={hostSeatIndex === seatByPos.right.seatIndex}
-              isActiveTurn={
-                (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                state.activeSeat === seatByPos.right.seatIndex
-              }
-              isSpeaking={isSeatSpeaking(seatByPos.right.clientId)}
-            />
-          </div>
+          {/* MIDDLE 3-COLUMN TABLE: WEST EDGE — CENTER ARENA — EAST EDGE */}
+          <div className="pati-inner-mat relative my-1.5 grid flex-1 grid-cols-[62px_minmax(0,1fr)_62px] items-center rounded-2xl px-1 sm:grid-cols-[68px_minmax(0,1fr)_68px]">
+            {/* WEST SEAT (Far Left Edge) */}
+            <div className="flex justify-start">
+              <SeatHub
+                compactMobile
+                seat={seatByPos.left}
+                position="left"
+                isMe={mySeatIndex === seatByPos.left.seatIndex}
+                isHost={hostSeatIndex === seatByPos.left.seatIndex}
+                isActiveTurn={
+                  (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
+                  state.activeSeat === seatByPos.left.seatIndex
+                }
+                isSpeaking={isSeatSpeaking(seatByPos.left.clientId)}
+              />
+            </div>
 
-          {/* Center Play Zone or Bidding Overlay */}
-          <section
-            aria-label="Center Play Zone"
-            data-testid="center-trick-arena"
-            className="flex flex-1 items-center justify-center py-2"
-          >
-            {state.phase === 'BIDDING' ? (
-              biddingCard
-            ) : (
-              <div className="grid grid-cols-[auto_auto_auto] grid-rows-[auto_auto_auto] items-center justify-items-center gap-2">
+            {/* CENTER 4-CARD CROSS */}
+            <section
+              aria-label="Center Play Zone"
+              data-testid="center-trick-arena"
+              className="flex items-center justify-center"
+            >
+              <div className="grid grid-cols-[auto_auto_auto] grid-rows-[auto_auto_auto] items-center justify-items-center gap-1 sm:gap-1.5">
                 <div />
                 {renderPlaySlot('North', 'top', true)}
                 <div />
@@ -704,11 +786,34 @@ export function GameTable({
                 {renderPlaySlot('South', 'bottom-left', true)}
                 <div />
               </div>
-            )}
-          </section>
+            </section>
 
-          {/* Bottom HUD Strip: Me (Bottom-Left) + Compact Dock (Bottom-Right) cleanly ABOVE hand */}
-          <div className="flex items-end justify-between gap-2">
+            {/* EAST SEAT (Far Right Edge) */}
+            <div className="flex justify-end">
+              <SeatHub
+                compactMobile
+                seat={seatByPos.right}
+                position="right"
+                isMe={mySeatIndex === seatByPos.right.seatIndex}
+                isHost={hostSeatIndex === seatByPos.right.seatIndex}
+                isActiveTurn={
+                  (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
+                  state.activeSeat === seatByPos.right.seatIndex
+                }
+                isSpeaking={isSeatSpeaking(seatByPos.right.clientId)}
+              />
+            </div>
+
+            {/* Mobile Transient Bidding Overlay centered cleanly over table */}
+            {state.phase === 'BIDDING' && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 p-3 backdrop-blur-[2px]">
+                {biddingCard}
+              </div>
+            )}
+          </div>
+
+          {/* BOTTOM CONTROL STRIP: Local Player (Left) + Ultra-Slim Dock (Right) */}
+          <div className="flex shrink-0 items-center justify-between gap-2 px-0.5 py-1">
             <SeatHub
               compactMobile
               seat={seatByPos['bottom-left']}
@@ -740,18 +845,18 @@ export function GameTable({
             />
           </div>
 
-          {/* Mobile Fanned Hand at Bottom-Center */}
+          {/* BOTTOM HAND: Large Thumb-Friendly Fanned Visiting Cards */}
           <div
             aria-label="Your hand"
             data-testid="player-hand"
-            className="flex flex-nowrap items-end justify-center pt-1"
+            className="flex shrink-0 flex-nowrap items-end justify-center pb-0.5 pt-1"
           >
             {mySeat.hand.map((card, idx) => {
               const count = mySeat.hand.length;
               const center = (count - 1) / 2;
               const offset = idx - center;
-              const rot = offset * 4.5;
-              const yOffset = Math.abs(offset) * Math.abs(offset) * 3;
+              const rot = offset * 4;
+              const yOffset = Math.abs(offset) * Math.abs(offset) * 2.5;
               return (
                 <div
                   key={card}
@@ -765,7 +870,7 @@ export function GameTable({
                     value={card}
                     orientation="portrait"
                     size="sm"
-                    className="!h-[98px] !w-[68px] !text-[36px]"
+                    className="!h-[96px] !w-[66px] !text-[34px]"
                     useCustomScan={scanSet.has(card)}
                     playable={state.phase === 'PLAYING' && isMyTurn}
                     disabled={state.phase !== 'PLAYING' || !isMyTurn}
@@ -787,9 +892,9 @@ export function GameTable({
           data-testid="round-summary-modal"
           className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
         >
-          <div className="glass-pill w-full max-w-lg rounded-3xl border-amber-300/40 p-6 text-[#faf3e6] shadow-2xl">
+          <div className="glass-pill w-full max-w-lg rounded-2xl border-amber-300/35 p-5 text-[#faf3e6] shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-bangla text-2xl font-extrabold text-amber-300">
+              <h2 className="font-bangla text-xl font-extrabold text-amber-300">
                 Round {latestRoundRecord.round} / {TOTAL_ROUNDS}
               </h2>
               <button
@@ -819,20 +924,18 @@ export function GameTable({
                         key={entry.seatIndex}
                         className="border-b border-white/10"
                       >
-                        <td className="py-2.5 pr-2 font-bold">
-                          {entry.username}
-                        </td>
-                        <td className="py-2.5 px-2 text-right text-amber-200">
+                        <td className="py-2 pr-2 font-bold">{entry.username}</td>
+                        <td className="py-2 px-2 text-right text-amber-200">
                           {entry.call}
                         </td>
                         <td
-                          className={`py-2.5 px-2 text-right font-bold ${
+                          className={`py-2 px-2 text-right font-bold ${
                             hit ? 'text-emerald-400' : 'text-red-400'
                           }`}
                         >
                           {entry.capturedPoints}
                         </td>
-                        <td className="py-2.5 pl-2 text-right font-extrabold text-white">
+                        <td className="py-2 pl-2 text-right font-extrabold text-white">
                           {entry.totalAfter}
                         </td>
                       </tr>
@@ -847,7 +950,7 @@ export function GameTable({
                 type="button"
                 onClick={() => onDispatchAction({ type: 'NEXT_ROUND' })}
                 data-testid="next-round-btn"
-                className="rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] shadow-lg transition hover:from-amber-200 hover:to-amber-400"
+                className="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] hover:bg-amber-300"
               >
                 {state.round >= TOTAL_ROUNDS
                   ? 'View Final Podium'
@@ -867,15 +970,15 @@ export function GameTable({
           data-testid="match-over-modal"
           className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
         >
-          <div className="glass-pill w-full max-w-lg rounded-3xl border-amber-300/60 p-6 text-[#faf3e6] shadow-2xl">
+          <div className="glass-pill w-full max-w-lg rounded-2xl border-amber-300/50 p-6 text-[#faf3e6] shadow-2xl">
             <div className="mb-5 flex flex-col items-center text-center">
-              <Trophy className="mb-2 h-11 w-11 text-amber-300" />
-              <h2 className="title-gold-3d font-bangla text-3xl font-extrabold">
-                একশো HUNDRED
+              <Trophy className="mb-2 h-10 w-10 text-amber-300" />
+              <h2 className="font-bangla text-2xl font-extrabold text-[#faf3e6]">
+                হান্ড্রেট <span className="text-[#e0a943]">HUNDRED</span>
               </h2>
               {matchRankings[0] && (
                 <p className="mt-1.5 text-sm text-[#e6d5b8]">
-                  Champion:{' '}
+                  Winner:{' '}
                   <strong className="text-amber-300">
                     {matchRankings[0].username}
                   </strong>{' '}
@@ -888,9 +991,9 @@ export function GameTable({
               {matchRankings.map((entry) => (
                 <li
                   key={entry.seatIndex}
-                  className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm ${
+                  className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-sm ${
                     entry.rank === 1
-                      ? 'border-amber-300/65 bg-amber-400/15'
+                      ? 'border-amber-300/60 bg-amber-400/15'
                       : 'border-white/15 bg-black/35'
                   }`}
                 >
@@ -909,11 +1012,11 @@ export function GameTable({
               ))}
             </ol>
 
-            <div className="mt-6 flex flex-wrap justify-end gap-2.5">
+            <div className="mt-5 flex flex-wrap justify-end gap-2.5">
               <button
                 type="button"
                 onClick={onLeaveRoom}
-                className="rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold text-[#faf3e6] hover:bg-white/15"
+                className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-[#faf3e6] hover:bg-white/15"
               >
                 Back to Lobby
               </button>
@@ -921,7 +1024,7 @@ export function GameTable({
                 type="button"
                 onClick={() => onDispatchAction({ type: 'PLAY_AGAIN' })}
                 data-testid="play-again-btn"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] shadow-lg hover:from-amber-200 hover:to-amber-400"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-5 py-2 text-sm font-extrabold text-[#1b1108] hover:bg-amber-300"
               >
                 <RotateCcw className="h-4 w-4" />
                 <span>Play Again</span>

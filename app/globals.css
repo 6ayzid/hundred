@@ -270,131 +270,113 @@
 }
 
 /* ==========================================================================
-   S+ 3D Tabletop Design System — একশো HUNDRED
+   Clean Handcrafted Tabletop Surface — হান্ড্রেট HUNDRED
+   Zero bloated AI images, matte woven reed texture, crisp contrast
    ========================================================================== */
 
 .pati-table-surface {
-  background-color: #160e08;
-  background-image: url('/assets/pati-board.jpg');
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
+  background-color: #211610;
+  background-image:
+    radial-gradient(
+      circle at 86% 12%,
+      rgba(232, 168, 76, 0.14) 0%,
+      rgba(176, 102, 36, 0.05) 28%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 88% 82% at 50% 48%,
+      rgba(92, 54, 34, 0.42) 0%,
+      rgba(36, 22, 15, 0.72) 68%,
+      rgba(16, 10, 7, 0.96) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(198, 138, 72, 0.055) 0px,
+      rgba(198, 138, 72, 0.055) 2px,
+      transparent 2px,
+      transparent 6px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(156, 74, 48, 0.06) 0px,
+      rgba(156, 74, 48, 0.06) 2px,
+      transparent 2px,
+      transparent 8px
+    );
 }
 
-.title-gold-3d {
-  background: linear-gradient(
-    180deg,
-    #fff6c4 0%,
-    #ffd55c 38%,
-    #efa31f 74%,
-    #c66f0c 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 2px 0 #5b2d06)
-    drop-shadow(0 4px 10px rgba(0, 0, 0, 0.85))
-    drop-shadow(0 0 18px rgba(255, 192, 67, 0.35));
+.pati-inner-mat {
+  background-color: #462a1c;
+  background-image:
+    radial-gradient(
+      ellipse 80% 75% at 50% 46%,
+      rgba(168, 108, 54, 0.24) 0%,
+      rgba(74, 40, 24, 0.12) 65%,
+      rgba(26, 14, 9, 0.48) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(219, 162, 92, 0.08) 0px,
+      rgba(219, 162, 92, 0.08) 1.5px,
+      transparent 1.5px,
+      transparent 5px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(128, 44, 32, 0.1) 0px,
+      rgba(128, 44, 32, 0.1) 1.5px,
+      transparent 1.5px,
+      transparent 7px
+    );
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 158, 92, 0.28),
+    inset 0 0 0 6px rgba(38, 21, 13, 0.55),
+    inset 0 0 0 7px rgba(188, 122, 62, 0.22),
+    0 18px 44px rgba(0, 0, 0, 0.55);
 }
 
 .glass-pill {
-  background: linear-gradient(
-    180deg,
-    rgba(36, 24, 17, 0.78) 0%,
-    rgba(22, 14, 10, 0.84) 100%
-  );
-  border: 1px solid rgba(255, 238, 210, 0.24);
-  box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 246, 228, 0.14);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(24, 16, 12, 0.84);
+  border: 1px solid rgba(235, 210, 175, 0.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .visiting-card-paper {
-  background-color: #f3ead7;
-  background-image:
-    radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.65) 0%, transparent 55%),
-    radial-gradient(circle at 86% 88%, rgba(188, 166, 128, 0.32) 0%, transparent 55%),
-    linear-gradient(155deg, #f7f0e1 0%, #efe4cd 55%, #e6d8bd 100%);
-  border: 1px solid rgba(212, 196, 165, 0.9);
+  background-color: #faf7f0;
+  background-image: linear-gradient(160deg, #fcfaf4 0%, #f4ede0 100%);
+  border: 1px solid #d9ccb4;
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.52),
-    0 3px 6px rgba(0, 0, 0, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    0 6px 14px rgba(0, 0, 0, 0.36),
+    0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
 .navy-card-back {
-  background: linear-gradient(155deg, #32508e 0%, #243c73 55%, #192b56 100%);
-  border: 2px solid #f2ead8;
-  box-shadow:
-    0 6px 14px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  background: linear-gradient(155deg, #273e6e 0%, #1a2c52 100%);
+  border: 1.5px solid #efe7d8;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.38);
 }
 
 .captured-deck-3d {
-  background: linear-gradient(155deg, #c63541 0%, #a2222d 62%, #821721 100%);
-  border: 1.5px solid rgba(242, 152, 160, 0.42);
+  background: linear-gradient(160deg, #a62b35 0%, #7d1c24 100%);
+  border: 1px solid rgba(245, 176, 180, 0.32);
   box-shadow:
-    0 2px 0 #7b161f,
-    0 4px 0 #971f2a,
-    0 6px 0 #661018,
-    0 8px 0 #821822,
-    0 10px 0 #4d0b11,
-    0 16px 24px rgba(0, 0, 0, 0.65);
+    0 2px 0 #5f141a,
+    0 4px 0 #470e13,
+    0 8px 14px rgba(0, 0, 0, 0.45);
 }
 
 .gold-coin-badge {
-  background: radial-gradient(
-    circle at 32% 26%,
-    #fff2ad 0%,
-    #f1c446 48%,
-    #c68917 92%,
-    #9c6609 100%
-  );
-  border: 1.5px solid #ffefb3;
-  box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.55),
-    inset 0 1px 2px rgba(255, 255, 255, 0.7),
-    inset 0 -2px 3px rgba(130, 78, 5, 0.55);
-}
-
-@keyframes lantern-flicker {
-  0%,
-  100% {
-    opacity: 0.78;
-    transform: scale(1);
-  }
-  35% {
-    opacity: 0.94;
-    transform: scale(1.035);
-  }
-  70% {
-    opacity: 0.84;
-    transform: scale(0.985);
-  }
-}
-
-.lantern-ambient-flicker {
-  background: radial-gradient(
-    circle at 75% 19%,
-    rgba(255, 206, 98, 0.26) 0%,
-    rgba(245, 158, 45, 0.11) 18%,
-    rgba(200, 102, 20, 0.03) 38%,
-    transparent 62%
-  );
-  animation: lantern-flicker 3.6s ease-in-out infinite;
-  pointer-events: none;
-}
-
-[data-rain-paused="true"] .lantern-ambient-flicker {
-  animation-play-state: paused;
+  background: linear-gradient(180deg, #f3cd67 0%, #cf9524 100%);
+  border: 1px solid #fae39c;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
 @keyframes center-card-pop {
   0% {
     opacity: 0;
-    transform: scale(0.72) translateY(18px);
+    transform: scale(0.82) translateY(12px);
   }
   100% {
     opacity: 1;
@@ -403,41 +385,41 @@
 }
 
 .animate-center-card-pop {
-  animation: center-card-pop 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: center-card-pop 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes deck-riffle-left {
   0%,
   100% {
-    transform: translateX(-6px) rotate(-7deg);
+    transform: translateX(-5px) rotate(-6deg);
   }
   50% {
-    transform: translateX(-22px) rotate(-14deg);
+    transform: translateX(-18px) rotate(-12deg);
   }
 }
 
 @keyframes deck-riffle-right {
   0%,
   100% {
-    transform: translateX(6px) rotate(7deg);
+    transform: translateX(5px) rotate(6deg);
   }
   50% {
-    transform: translateX(22px) rotate(14deg);
+    transform: translateX(18px) rotate(12deg);
   }
 }
 
 .animate-riffle-left {
-  animation: deck-riffle-left 320ms ease-in-out infinite;
+  animation: deck-riffle-left 300ms ease-in-out infinite;
 }
 
 .animate-riffle-right {
-  animation: deck-riffle-right 320ms ease-in-out infinite;
+  animation: deck-riffle-right 300ms ease-in-out infinite;
 }
 
 @keyframes deal-fan-in {
   0% {
     opacity: 0;
-    transform: translateY(-90px) scale(0.55);
+    transform: translateY(-48px) scale(0.75);
   }
   100% {
     opacity: 1;
@@ -446,6 +428,7 @@
 }
 
 .animate-deal-fan-in {
-  animation: deal-fan-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: deal-fan-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
 

@@ -644,29 +644,70 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     onlineHumanSeatsRef.current = onlineHumanSeats;
   }, [isHost, onlineHumanSeats]);
 
-  const sendBroadcastEvent = useCallback((event: SyncBroadcastEvent) => {
-    const channel = channelRef.current;
-    if (channel && isSubscribedRef.current) {
-      try {
-        void channel.send({
-          type: 'broadcast',
-          event: event.type,
-          payload: event,
-        });
-      } catch {
-        // Ignore transient channel send errors
-      }
+  const isHttpRelayEnabled = useCallback(() => {
+    if (typeof window === 'undefined' || typeof fetch !== 'function') {
+      return false;
     }
-
-    const bc = broadcastChannelRef.current;
-    if (bc) {
-      try {
-        bc.postMessage(event);
-      } catch {
-        // Ignore closed BroadcastChannel errors
-      }
+    if (typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent)) {
+      return false;
     }
+    return window.location.protocol === 'http:' || window.location.protocol === 'https:';
   }, []);
+
+  const sendBroadcastEvent = useCallback(
+    (event: SyncBroadcastEvent) => {
+      const channel = channelRef.current;
+      if (channel && isSubscribedRef.current) {
+        try {
+          void channel.send({
+            type: 'broadcast',
+            event: event.type,
+            payload: event,
+          });
+        } catch {
+          // Ignore transient channel send errors
+        }
+      }
+
+      const bc = broadcastChannelRef.current;
+      if (bc) {
+        try {
+          bc.postMessage(event);
+        } catch {
+          // Ignore closed BroadcastChannel errors
+        }
+      }
+
+      if (
+        !channel &&
+        validRoomRef.current &&
+        roomCodeRef.current &&
+        isHttpRelayEnabled()
+      ) {
+        const endpoint = `/api/rooms/${encodeURIComponent(roomCodeRef.current)}`;
+        if (event.type === 'STATE_SNAPSHOT') {
+          void fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'SNAPSHOT', state: event.state }),
+          }).catch(() => {});
+        } else if (event.type === 'GAME_ACTION') {
+          void fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'ACTION', action: event.action }),
+          }).catch(() => {});
+        } else if (event.type === 'CHAT_MSG') {
+          void fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'CHAT', message: event.message }),
+          }).catch(() => {});
+        }
+      }
+    },
+    [isHttpRelayEnabled],
+  );
 
   const commitAndPersistState = useCallback(
     (nextState: GameState, shouldBroadcast: boolean) => {
@@ -881,7 +922,80 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
         }
       }
 
+      let relayInterval: ReturnType<typeof setInterval> | null = null;
+      let relayCancelled = false;
+
+      if (isHttpRelayEnabled()) {
+        const endpoint = `/api/rooms/${encodeURIComponent(normalizedRoomCode)}`;
+
+        const adoptRelayPayload = (data: {
+          state?: GameState | null;
+          chat?: ChatMessage[];
+        }) => {
+          if (relayCancelled) return;
+          if (data.state && isValidGameState(data.state)) {
+            const current = stateRef.current;
+            const currentHumans = current
+              ? current.seats.filter((s) => s.type === 'HUMAN').length
+              : 0;
+            const remoteHumans = data.state.seats.filter(
+              (s) => s.type === 'HUMAN',
+            ).length;
+            const shouldAdopt =
+              !current ||
+              data.state.version > current.version ||
+              (data.state.version === current.version &&
+                remoteHumans > currentHumans) ||
+              (current.phase === 'LOBBY' &&
+                data.state.phase !== 'LOBBY') ||
+              (findMySeatIndex(data.state, activeClientId) !== null &&
+                findMySeatIndex(data.state, activeClientId) !==
+                  findMySeatIndex(current, activeClientId));
+
+            if (shouldAdopt) {
+              commitAndPersistState(data.state, false);
+            }
+          }
+          if (Array.isArray(data.chat) && data.chat.length > 0) {
+            setChatMessages((prev) => {
+              const seen = new Set(prev.map((m) => m.id));
+              const additions = data.chat!.filter((m) => !seen.has(m.id));
+              return additions.length > 0 ? [...prev, ...additions] : prev;
+            });
+          }
+        };
+
+        void fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'JOIN',
+            clientId: activeClientId,
+            username: usernameRef.current,
+          }),
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data) adoptRelayPayload(data);
+          })
+          .catch(() => {});
+
+        relayInterval = setInterval(() => {
+          if (relayCancelled) return;
+          void fetch(endpoint, { cache: 'no-store' })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (data) adoptRelayPayload(data);
+            })
+            .catch(() => {});
+        }, 1200);
+      }
+
       return () => {
+        relayCancelled = true;
+        if (relayInterval) {
+          clearInterval(relayInterval);
+        }
         if (typeof window !== 'undefined') {
           window.removeEventListener('storage', handleStorageEvent);
         }
@@ -1064,6 +1178,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     commitAndPersistState,
     handleIncomingBroadcast,
     sendBroadcastEvent,
+    isHttpRelayEnabled,
   ]);
 
   // Re-track Presence whenever mySeatIndex or username changes while subscribed

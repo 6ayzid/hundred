@@ -14,13 +14,14 @@ import {
   Trash2,
 } from 'lucide-react';
 import { PlayingCard } from '@/components/PlayingCard';
-import { getSeatAvatarSrc } from '@/components/SeatHub';
+import { SeatAvatarGraphic } from '@/components/SeatHub';
 import { VoiceBar } from '@/components/VoiceBar';
 import {
   generateRoomCode,
   isValidRoomCode,
   normalizeRoomCode,
 } from '@/lib/gameEngine';
+import { unlockAudio } from '@/lib/soundEngine';
 import {
   type CardValue,
   type ChatMessage,
@@ -31,7 +32,7 @@ import {
   type SyncMode,
 } from '@/lib/types';
 
-const PREVIEW_CARDS: CardValue[] = [5, 40, 70, 90, 100];
+const PREVIEW_CARDS: CardValue[] = [1, 40, 70, 90, 100];
 
 export interface LobbyProps {
   nickname: string;
@@ -125,6 +126,7 @@ export function Lobby({
   };
 
   const handleCreateRoom = () => {
+    unlockAudio();
     if (!ensureValidNickname()) return;
     const code = generateRoomCode();
     onJoinCodeInputChange(code);
@@ -134,6 +136,7 @@ export function Lobby({
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
+    unlockAudio();
     if (!ensureValidNickname()) return;
     const normalized = normalizeRoomCode(joinCodeInput);
     if (!isValidRoomCode(normalized)) {
@@ -158,14 +161,8 @@ export function Lobby({
     <div
       data-testid="lobby-root"
       data-rain-paused={lowDataMode ? 'true' : 'false'}
-      className="pati-table-surface relative flex min-h-screen w-full items-center justify-center overflow-x-hidden p-4 sm:p-8"
+      className="pati-table-surface relative flex min-h-dvh w-full items-center justify-center overflow-x-hidden p-4 sm:p-8"
     >
-      {/* Atmospheric overlays */}
-      <div aria-hidden="true" className="table-vignette absolute inset-0" />
-      <div
-        aria-hidden="true"
-        className="lantern-ambient-flicker absolute inset-0"
-      />
       <div
         aria-hidden="true"
         data-testid="rain-overlay"
@@ -175,18 +172,17 @@ export function Lobby({
         } ${lowDataMode ? 'rain-paused' : ''}`}
       />
 
-      <main className="glass-pill relative z-10 flex w-full max-w-2xl flex-col items-center gap-6 rounded-3xl p-6 text-center shadow-[0_28px_70px_rgba(0,0,0,0.75)] sm:p-9">
-        {/* Stacked 3D Gold Title */}
+      <main className="glass-pill relative z-10 flex w-full max-w-xl flex-col items-center gap-5 rounded-3xl p-5 text-center sm:p-8">
         <header className="flex flex-col items-center">
-          <h1 className="title-gold-3d font-bangla text-5xl font-extrabold leading-[0.95] sm:text-6xl">
-            একশো HUNDRED
+          <h1 className="font-bangla text-4xl font-extrabold tracking-tight text-[#faf3e6] sm:text-5xl">
+            হান্ড্রেট <span className="text-[#e0a943]">HUNDRED</span>
           </h1>
-          <p className="mt-2 text-sm font-medium text-[#e6d5b8] sm:text-base">
-            4-Player Rainy-Night Pati Tabletop • 10 Rounds • 20 Visiting Cards
+          <p className="mt-1.5 text-xs font-medium text-[#d8c7ae] sm:text-sm">
+            4 Players • 10 Rounds • Holder of 1 starts • Min Call 50
           </p>
         </header>
 
-        {/* Fanned Handwritten Visiting Cards Showcase */}
+        {/* Fanned Visiting Cards Showcase */}
         <div
           aria-label="Handwritten visiting cards preview"
           className="flex items-end justify-center py-1"
@@ -197,7 +193,7 @@ export function Lobby({
               <div
                 key={cardValue}
                 style={{
-                  transform: `rotate(${offset * 6}deg) translateY(${Math.abs(offset) * 3}px)`,
+                  transform: `rotate(${offset * 5}deg) translateY(${Math.abs(offset) * 2.5}px)`,
                   marginLeft: idx === 0 ? 0 : -12,
                 }}
               >
@@ -211,13 +207,13 @@ export function Lobby({
           })}
         </div>
 
-        {/* VIEW 1: ENTRY LOBBY */}
+        {/* ENTRY LOBBY */}
         {!activeRoomCode || !state ? (
           <div className="w-full space-y-4 text-left">
             <div>
               <label
                 htmlFor="nickname-input"
-                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#d7c4a3]"
+                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#d8c7ae]"
               >
                 Your Nickname
               </label>
@@ -241,7 +237,7 @@ export function Lobby({
                 type="button"
                 onClick={handleCreateRoom}
                 data-testid="create-room-btn"
-                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-4 py-3 text-sm font-extrabold text-[#1b1108] shadow-lg transition hover:from-amber-200 hover:to-amber-400"
+                className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-extrabold text-[#1b1108] transition hover:bg-amber-300"
               >
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 <span>Create Room</span>
@@ -282,7 +278,7 @@ export function Lobby({
             )}
           </div>
         ) : (
-          /* VIEW 2: ROOM LOBBY */
+          /* ROOM LOBBY */
           <div data-testid="room-lobby" className="w-full space-y-4 text-left">
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/15 bg-black/40 px-4 py-3">
               <div>
@@ -297,7 +293,7 @@ export function Lobby({
                     {state.roomCode}
                   </span>
                   <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#e6d5b8]">
-                    {syncMode === 'supabase' ? 'Online Sync' : 'Local Mode'}
+                    {syncMode === 'supabase' ? 'Supabase Live' : 'Room Relay'}
                   </span>
                 </div>
               </div>
@@ -307,12 +303,12 @@ export function Lobby({
                   type="button"
                   onClick={() => void copyInviteLink(state.roomCode)}
                   data-testid="copy-invite-btn"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300/45 bg-amber-400/15 px-3.5 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108]"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300/45 bg-amber-400/15 px-3 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108]"
                 >
                   {copiedInviteUrl ? (
                     <>
                       <Check className="h-3.5 w-3.5" />
-                      <span>Invite Copied!</span>
+                      <span>Copied!</span>
                     </>
                   ) : (
                     <>
@@ -349,7 +345,7 @@ export function Lobby({
               </div>
             )}
 
-            {/* 4 Seats Grid with 3D Avatars */}
+            {/* 4 Seats Grid */}
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {state.seats.map((seat) => {
                 const isMe = mySeatIndex === seat.seatIndex;
@@ -370,13 +366,8 @@ export function Lobby({
                           S{seat.seatIndex + 1}
                         </div>
                       ) : (
-                        <div className="h-10 w-10 overflow-hidden rounded-full border-2 border-emerald-400/75 bg-[#162920]">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={getSeatAvatarSrc(seat)}
-                            alt={seat.username}
-                            className="h-full w-full object-cover object-top"
-                          />
+                        <div className="h-10 w-10 overflow-hidden rounded-full ring-1 ring-white/25">
+                          <SeatAvatarGraphic seat={seat} size={40} />
                         </div>
                       )}
                       <div>
@@ -444,16 +435,16 @@ export function Lobby({
               })}
             </div>
 
-            {/* Start Match Controls */}
             <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
               {emptySeatCount > 0 && (
                 <button
                   type="button"
-                  onClick={() =>
-                    onDispatchAction({ type: 'FILL_BOTS_AND_START' })
-                  }
+                  onClick={() => {
+                    unlockAudio();
+                    onDispatchAction({ type: 'FILL_BOTS_AND_START' });
+                  }}
                   data-testid="fill-bots-start-btn"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] shadow-lg transition hover:from-amber-200 hover:to-amber-400"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] transition hover:bg-amber-300"
                 >
                   <Bot className="h-4 w-4" />
                   <span>Fill Bots &amp; Start</span>
@@ -463,11 +454,14 @@ export function Lobby({
               <button
                 type="button"
                 disabled={!allSeatsFilled}
-                onClick={() => onDispatchAction({ type: 'START_MATCH' })}
+                onClick={() => {
+                  unlockAudio();
+                  onDispatchAction({ type: 'START_MATCH' });
+                }}
                 data-testid="start-match-btn"
                 className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ${
                   allSeatsFilled
-                    ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-[#052e16] shadow-lg hover:from-emerald-300 hover:to-emerald-500'
+                    ? 'bg-emerald-500 text-[#052e16] hover:bg-emerald-400'
                     : 'cursor-not-allowed border border-white/15 bg-white/5 text-stone-500'
                 }`}
               >
@@ -494,15 +488,15 @@ export function Lobby({
           </div>
         )}
 
-        {/* Environment Readiness Footer */}
         {!cloudReady && (
           <div
             aria-label="Environment readiness"
             className="w-full rounded-2xl border border-white/12 bg-black/35 px-4 py-2.5 text-left text-[11px] text-[#cbb89d]"
           >
-            <strong className="text-amber-300">Local + Bots Mode:</strong> Add
-            Supabase &amp; LiveKit keys in <code>.env.local</code> (see{' '}
-            <code>.env.example</code>) for multi-device sync &amp; live voice.
+            <strong className="text-amber-300">Setup Tip:</strong> Add Supabase
+            &amp; LiveKit keys in Vercel Environment Variables (see{' '}
+            <code>.env.example</code>) for persistent cross-region Realtime sync
+            &amp; live voice mic. Room Relay &amp; SFX work out of the box.
           </div>
         )}
       </main>

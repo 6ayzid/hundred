@@ -214,7 +214,6 @@ function startRound(
   overrideRoundHistory?: RoundRecord[],
 ): GameState {
   const deck = shuffleDeck(rng);
-  const starterSeat = getRoundStarterSeat(roundNumber);
   const nextSeats = cloneSeats(baseState.seats);
 
   for (const idx of SEAT_INDICES) {
@@ -228,6 +227,10 @@ function startRound(
       tricksWon: 0,
     };
   }
+
+  // Rule: Whoever holds card 1 starts the round (calls first and leads Trick 1).
+  const holderOfOne = nextSeats.find((seat) => seat.hand.includes(1))?.seatIndex;
+  const starterSeat: SeatIndex = holderOfOne ?? getRoundStarterSeat(roundNumber);
 
   return {
     ...baseState,

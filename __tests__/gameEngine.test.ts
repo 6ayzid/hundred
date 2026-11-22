@@ -434,8 +434,9 @@ describe('4. Lobby initialization, bot seat management & start guardrails (F-06)
     const started = applyAction(lobby3, { type: 'START_MATCH' }, 10_500);
     expect(started.phase).toBe('BIDDING');
     expect(started.round).toBe(1);
-    expect(started.roundStarterSeat).toBe(0);
-    expect(started.activeSeat).toBe(0);
+    const holder = started.seats.find((s) => s.hand.includes(1))!.seatIndex;
+    expect(started.roundStarterSeat).toBe(holder);
+    expect(started.activeSeat).toBe(holder);
     expect(started.turnDeadline).toBe(10_500 + BID_TIMEOUT_MS);
 
     // Rejected outside LOBBY
@@ -447,24 +448,27 @@ describe('4. Lobby initialization, bot seat management & start guardrails (F-06)
 });
 
 describe('5. Bidding phase rules, boundaries & negative guards (F-09)', () => {
-  it('exposes exact QUICK_CALL_VALUES and accepts sequential boundary bids 0..500', () => {
+  it('exposes exact QUICK_CALL_VALUES and accepts sequential boundary bids 50..500 starting with holder of 1', () => {
     expect([...QUICK_CALL_VALUES]).toEqual([50, 100, 150, 200, 250, 300, 400, 500]);
 
     const lobby = createInitialLobbyState('TNG-KM47', 'host-1', 'Rafiq', 1_000);
     let state = applyAction(lobby, { type: 'FILL_BOTS_AND_START' }, 2_000);
 
-    state = applyAction(state, { type: 'PLACE_CALL', seatIndex: 0, call: 50 }, 2_100);
-    expect(state.phase).toBe('BIDDING');
-    expect(state.activeSeat).toBe(1);
-    expect(state.seats[0].call).toBe(50);
+    const starter = state.roundStarterSeat;
+    expect(state.seats[starter].hand).toContain(1);
+    expect(state.activeSeat).toBe(starter);
 
-    state = applyAction(state, { type: 'PLACE_CALL', seatIndex: 1, call: 50 }, 2_200);
-    expect(state.activeSeat).toBe(2);
+    const bids = [50, 50, 300, 500];
+    for (let i = 0; i < 4; i += 1) {
+      const seat = ((starter + i) % 4) as SeatIndex;
+      state = applyAction(state, { type: 'PLACE_CALL', seatIndex: seat, call: bids[i] }, 2_100 + i * 100);
+      expect(state.seats[seat].call).toBe(bids[i]);
+      if (i < 3) {
+        expect(state.phase).toBe('BIDDING');
+        expect(state.activeSeat).toBe(((starter + i + 1) % 4) as SeatIndex);
+      }
+    }
 
-    state = applyAction(state, { type: 'PLACE_CALL', seatIndex: 2, call: 300 }, 2_300);
-    expect(state.activeSeat).toBe(3);
-
-    state = applyAction(state, { type: 'PLACE_CALL', seatIndex: 3, call: 500 }, 2_400);
     expect(state.phase).toBe('PLAYING');
     expect(state.trickNumber).toBe(1);
     expect(state.trickLeaderSeat).toBe(state.roundStarterSeat);
@@ -479,20 +483,22 @@ describe('5. Bidding phase rules, boundaries & negative guards (F-09)', () => {
     );
 
     const bidding = applyAction(lobby, { type: 'FILL_BOTS_AND_START' }, 2_000);
+    const firstSeat = bidding.activeSeat;
+    const otherSeat = ((firstSeat + 1) % 4) as SeatIndex;
 
-    const badCalls = [45, 510, -10, Number.NaN, Number.POSITIVE_INFINITY, 50.5, 0.1];
+    const badCalls = [0, 45, 510, -10, Number.NaN, Number.POSITIVE_INFINITY, 50.5, 0.1];
     for (const badCall of badCalls) {
       const next = applyAction(
         bidding,
-        { type: 'PLACE_CALL', seatIndex: 0, call: badCall },
+        { type: 'PLACE_CALL', seatIndex: firstSeat, call: badCall },
         2_100,
       );
       expect(next).toBe(bidding);
-      expect(next.seats[0].call).toBeNull();
+      expect(next.seats[firstSeat].call).toBeNull();
     }
 
     // Out of turn and out of range seat
-    expect(applyAction(bidding, { type: 'PLACE_CALL', seatIndex: 1, call: 100 }, 2_100)).toBe(
+    expect(applyAction(bidding, { type: 'PLACE_CALL', seatIndex: otherSeat, call: 100 }, 2_100)).toBe(
       bidding,
     );
     expect(
@@ -501,11 +507,12 @@ describe('5. Bidding phase rules, boundaries & negative guards (F-09)', () => {
 
     // Wrong phase after bidding completes
     let playing = bidding;
-    for (const idx of SEAT_INDICES) {
-      playing = applyAction(playing, { type: 'PLACE_CALL', seatIndex: idx, call: 100 }, 2_200 + idx);
+    for (let i = 0; i < 4; i += 1) {
+      const s = playing.activeSeat;
+      playing = applyAction(playing, { type: 'PLACE_CALL', seatIndex: s, call: 100 }, 2_200 + i);
     }
     expect(playing.phase).toBe('PLAYING');
-    expect(applyAction(playing, { type: 'PLACE_CALL', seatIndex: 0, call: 100 }, 3_000)).toBe(
+    expect(applyAction(playing, { type: 'PLACE_CALL', seatIndex: playing.activeSeat, call: 100 }, 3_000)).toBe(
       playing,
     );
   });
@@ -610,12 +617,13 @@ describe('6. Trick play, negative guards, TRICK_COMPLETE & ROUND_SUMMARY pauses 
     expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 0, card: 1 }, now + 100)).toBe(state);
     expect(resolveTimeoutOrTransition(state, state.turnDeadline! - 1)).toBe(state);
 
-    // Advance via NEXT_ROUND
+    // Advance via NEXT_ROUND — holder of card 1 starts Round 2
     const round2 = applyAction(state, { type: 'NEXT_ROUND' }, now + 1_000);
     expect(round2.phase).toBe('BIDDING');
     expect(round2.round).toBe(2);
-    expect(round2.roundStarterSeat).toBe(1);
-    expect(round2.activeSeat).toBe(1);
+    const holderOfOneR2 = round2.seats.find((s) => s.hand.includes(1))!.seatIndex;
+    expect(round2.roundStarterSeat).toBe(holderOfOneR2);
+    expect(round2.activeSeat).toBe(holderOfOneR2);
     expect(round2.trickNumber).toBe(0);
     for (const seat of round2.seats) {
       expect(seat.hand).toHaveLength(5);
@@ -748,8 +756,8 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
       createDeckTargetRng(fixtureBOrder),
     );
     expect(state.round).toBe(2);
-    expect(state.roundStarterSeat).toBe(1);
-    expect(state.activeSeat).toBe(1);
+    expect(state.roundStarterSeat).toBe(0);
+    expect(state.activeSeat).toBe(0);
 
     const bidsB: [number, number, number, number] = [100, 180, 50, 300];
     for (let turn = 0; turn < 4; turn += 1) {
@@ -761,9 +769,9 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
       );
     }
     expect(state.phase).toBe('PLAYING');
-    expect(state.activeSeat).toBe(1);
+    expect(state.activeSeat).toBe(0);
 
-    // Round 2 Trick 1 is led by Seat 1 (activeSeat = 1 -> 2 -> 3 -> 0)
+    // Round 2 Trick 1 is led by Seat 0 (holder of card 1)
     const tricksB: Array<Record<SeatIndex, CardValue>> = [
       { 0: 55, 1: 15, 2: 10, 3: 20 }, // S0 wins 100
       { 0: 30, 1: 80, 2: 25, 3: 35 }, // S1 wins 170
@@ -827,8 +835,9 @@ describe('8. Full 10-round match simulation (200 plays), MATCH_OVER, getMatchRan
     for (let round = 1; round <= TOTAL_ROUNDS; round += 1) {
       expect(state.phase).toBe('BIDDING');
       expect(state.round).toBe(round);
-      expect(state.roundStarterSeat).toBe((round - 1) % 4);
-      expect(state.activeSeat).toBe((round - 1) % 4);
+      const holderOfOne = state.seats.find((s) => s.hand.includes(1))!.seatIndex;
+      expect(state.roundStarterSeat).toBe(holderOfOne);
+      expect(state.activeSeat).toBe(holderOfOne);
 
       const roundDeck = state.seats.flatMap((s) => s.hand);
       expect(roundDeck).toHaveLength(20);
@@ -924,8 +933,9 @@ describe('8. Full 10-round match simulation (200 plays), MATCH_OVER, getMatchRan
     const restarted = applyAction(state, { type: 'PLAY_AGAIN' }, now + 1_000, rng);
     expect(restarted.phase).toBe('BIDDING');
     expect(restarted.round).toBe(1);
-    expect(restarted.roundStarterSeat).toBe(0);
-    expect(restarted.activeSeat).toBe(0);
+    const restartedStarter = restarted.seats.find((s) => s.hand.includes(1))!.seatIndex;
+    expect(restarted.roundStarterSeat).toBe(restartedStarter);
+    expect(restarted.activeSeat).toBe(restartedStarter);
     expect(restarted.trickNumber).toBe(0);
     expect(restarted.roundHistory).toEqual([]);
     expect(restarted.currentTrick).toEqual([]);
@@ -1032,38 +1042,41 @@ describe('9. Timeout constants & shot-clock auto-resolution (F-09, F-10, F-15)',
     expect(resolveTimeoutOrTransition(state, state.turnDeadline! - 1)).toBe(state);
     expect(resolveTimeoutOrTransition(state, state.turnDeadline! - 10_000)).toBe(state);
 
-    // At turnDeadline -> auto-calls 50 for Seat 0
+    // Seat 2 holds card 1 in targetOrder ([1, 25, 50, 60, 75]), so Seat 2 starts!
+    expect(state.activeSeat).toBe(2);
+
+    // At turnDeadline -> auto-calls 50 for Seat 2
     state = resolveTimeoutOrTransition(state, state.turnDeadline!);
-    expect(state.seats[0].call).toBe(50);
-    expect(state.activeSeat).toBe(1);
+    expect(state.seats[2].call).toBe(50);
+    expect(state.activeSeat).toBe(3);
     expect(state.turnDeadline).toBe(45_000 + BID_TIMEOUT_MS);
 
     // Finish remaining bids
-    for (const idx of [1, 2, 3] as const) {
+    for (const idx of [3, 0, 1] as const) {
       state = resolveTimeoutOrTransition(state, state.turnDeadline! + 10);
       expect(state.seats[idx].call).toBe(50);
     }
 
     expect(state.phase).toBe('PLAYING');
-    expect(state.activeSeat).toBe(0);
+    expect(state.activeSeat).toBe(2);
     expect(state.turnDeadline).toBe(state.emittedAt + PLAY_TIMEOUT_MS);
 
     // Pre-deadline in PLAYING is no-op
     expect(resolveTimeoutOrTransition(state, state.turnDeadline! - 1)).toBe(state);
 
-    // At play deadline -> Seat 0 auto-plays lowest card (15 from [15, 40, 65, 80, 100])
-    const expectedMinSeat0 = Math.min(...state.seats[0].hand);
-    expect(expectedMinSeat0).toBe(15);
+    // At play deadline -> Seat 2 auto-plays lowest card (1 from [1, 25, 50, 60, 75])
+    const expectedMinSeat2 = Math.min(...state.seats[2].hand);
+    expect(expectedMinSeat2).toBe(1);
     state = resolveTimeoutOrTransition(state, state.turnDeadline!);
-    expect(state.currentTrick).toEqual([{ seatIndex: 0, card: 15 }]);
-    expect(state.seats[0].hand).toEqual([40, 65, 80, 100]);
-    expect(state.activeSeat).toBe(1);
+    expect(state.currentTrick).toEqual([{ seatIndex: 2, card: 1 }]);
+    expect(state.seats[2].hand).toEqual([25, 50, 60, 75]);
+    expect(state.activeSeat).toBe(3);
 
-    // Seat 1 auto-plays lowest card (5 from [5, 35, 70, 90, 95])
+    // Seat 3 auto-plays lowest card (10 from [10, 20, 30, 45, 55])
     state = resolveTimeoutOrTransition(state, state.turnDeadline!);
     expect(state.currentTrick).toEqual([
-      { seatIndex: 0, card: 15 },
-      { seatIndex: 1, card: 5 },
+      { seatIndex: 2, card: 1 },
+      { seatIndex: 3, card: 10 },
     ]);
   });
 });
@@ -1165,18 +1178,20 @@ describe('10. Bot AI, M3 helpers, deep immutability & Node-safe pure imports', (
     );
 
     let playing = bidding;
-    for (const idx of SEAT_INDICES) {
+    for (let i = 0; i < 4; i += 1) {
+      const bidder = playing.activeSeat;
       playing = deepFreeze(
-        applyAction(playing, { type: 'PLACE_CALL', seatIndex: idx, call: 100 }, 1_600 + idx),
+        applyAction(playing, { type: 'PLACE_CALL', seatIndex: bidder, call: 100 }, 1_600 + i),
       );
     }
 
-    const botCard = computeBotCard(playing, 0);
-    expect(playing.seats[0].hand).toContain(botCard);
+    const leadSeat = playing.activeSeat;
+    const botCard = computeBotCard(playing, leadSeat);
+    expect(playing.seats[leadSeat].hand).toContain(botCard);
     const played = deepFreeze(
-      applyAction(playing, { type: 'PLAY_CARD', seatIndex: 0, card: botCard }, 1_700),
+      applyAction(playing, { type: 'PLAY_CARD', seatIndex: leadSeat, card: botCard }, 1_700),
     );
-    expect(played.currentTrick).toEqual([{ seatIndex: 0, card: botCard }]);
+    expect(played.currentTrick).toEqual([{ seatIndex: leadSeat, card: botCard }]);
 
     const timedOut = deepFreeze(
       resolveTimeoutOrTransition(played, played.turnDeadline! + 50),
@@ -1278,9 +1293,9 @@ describe('10. Bot AI, M3 helpers, deep immutability & Node-safe pure imports', (
 
     // 4. computeBotCard rejects string '0' and handles missing/corrupted currentTrick
     let playing = bidding;
-    for (const idx of SEAT_INDICES) {
+    for (let i = 0; i < 4; i += 1) {
       playing = deepFreeze(
-        applyAction(playing, { type: 'PLACE_CALL', seatIndex: idx, call: 100 }, 2_200 + idx),
+        applyAction(playing, { type: 'PLACE_CALL', seatIndex: playing.activeSeat, call: 100 }, 2_200 + i),
       );
     }
     expect(isValidGameState(playing)).toBe(true);
@@ -1315,22 +1330,39 @@ describe('10. Bot AI, M3 helpers, deep immutability & Node-safe pure imports', (
     );
     expect(Object.is(removedNegZeroBot.seats[0].seatIndex, 0)).toBe(true);
 
+    let bidAt0 = bidding;
+    while (bidAt0.activeSeat !== 0) {
+      bidAt0 = applyAction(
+        bidAt0,
+        { type: 'PLACE_CALL', seatIndex: bidAt0.activeSeat, call: 50 },
+        2_050,
+      );
+    }
     const calledNegZero = applyAction(
-      bidding,
+      bidAt0,
       { type: 'PLACE_CALL', seatIndex: -0 as SeatIndex, call: 50 },
       2_100,
     );
     expect(calledNegZero.seats[0].call).toBe(50);
     expect(calledNegZero.activeSeat).toBe(1);
 
-    const card0 = playing.seats[0].hand[0];
+    let playAt0 = playing;
+    while (playAt0.activeSeat !== 0) {
+      const s = playAt0.activeSeat;
+      playAt0 = applyAction(
+        playAt0,
+        { type: 'PLAY_CARD', seatIndex: s, card: playAt0.seats[s].hand[0] },
+        2_450,
+      );
+    }
+    const card0 = playAt0.seats[0].hand[0];
     const playedNegZero = applyAction(
-      playing,
+      playAt0,
       { type: 'PLAY_CARD', seatIndex: -0 as SeatIndex, card: card0 },
       2_500,
     );
-    expect(playedNegZero.currentTrick).toHaveLength(1);
-    expect(Object.is(playedNegZero.currentTrick[0].seatIndex, 0)).toBe(true);
+    const seat0Play = playedNegZero.currentTrick.find((p) => p.seatIndex === 0)!;
+    expect(Object.is(seat0Play.seatIndex, 0)).toBe(true);
 
     // 6. All 6 cross-field semantic checks in isValidGameState
     // 6a. MATCH_OVER with round !== 10 or non-null turnDeadline

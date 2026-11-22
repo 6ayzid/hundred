@@ -770,9 +770,9 @@ export function VoiceBar({
           </div>
         )}
 
-        {/* Sleek Bottom-Right Glass Dock matching demo (Mic | Chat + Room: TNG-XX) */}
-        <div className="glass-pill flex flex-col items-center gap-2 rounded-2xl px-3 py-2.5 shadow-2xl">
-          <div className="flex items-center gap-2">
+        {/* Sleek Bottom-Right Glass Dock */}
+        <div className="glass-pill flex shrink-0 items-center gap-1 rounded-2xl px-1.5 py-1 sm:gap-1.5 sm:px-2 sm:py-1.5 md:flex-col md:gap-2 md:px-3 md:py-2.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
             {/* Mic Button */}
             <button
               type="button"
@@ -782,18 +782,18 @@ export function VoiceBar({
               data-active={String(isOpenMic)}
               data-state={isOpenMic ? 'unmuted' : 'muted'}
               onClick={handleToggleOpenMic}
-              className={`flex h-14 w-[66px] flex-col items-center justify-center gap-1 rounded-xl border transition ${
+              className={`flex h-8 w-8 items-center justify-center rounded-xl border transition sm:h-9 sm:w-9 md:h-12 md:w-14 md:flex-col md:gap-0.5 ${
                 isMicActive
-                  ? 'border-emerald-400/80 bg-emerald-500/25 text-emerald-100 shadow-[0_0_16px_rgba(52,211,153,0.4)]'
-                  : 'border-white/15 bg-white/12 text-[#faf3e6] hover:bg-white/20'
+                  ? 'border-emerald-400/80 bg-emerald-500/20 text-emerald-100'
+                  : 'border-white/15 bg-white/10 text-[#faf3e6] hover:bg-white/15'
               }`}
             >
               {isMicActive ? (
-                <Mic className="h-5 w-5" />
+                <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               ) : (
-                <MicOff className="h-5 w-5 opacity-90" />
+                <MicOff className="h-3.5 w-3.5 opacity-90 sm:h-4 sm:w-4" />
               )}
-              <span className="text-[11px] font-semibold leading-none">
+              <span className="hidden text-[10px] font-semibold leading-none md:inline">
                 Mic
               </span>
             </button>
@@ -811,18 +811,18 @@ export function VoiceBar({
                 setIsSettingsOpen(false);
                 handleToggleChatDrawer();
               }}
-              className={`relative flex h-14 w-[66px] flex-col items-center justify-center gap-1 rounded-xl border transition ${
+              className={`relative flex h-8 w-8 items-center justify-center rounded-xl border transition sm:h-9 sm:w-9 md:h-12 md:w-14 md:flex-col md:gap-0.5 ${
                 isChatOpen
-                  ? 'border-amber-300/80 bg-amber-400/25 text-amber-100'
-                  : 'border-white/15 bg-white/12 text-[#faf3e6] hover:bg-white/20'
+                  ? 'border-amber-300/80 bg-amber-400/20 text-amber-100'
+                  : 'border-white/15 bg-white/10 text-[#faf3e6] hover:bg-white/15'
               }`}
             >
-              <MessageSquare className="h-5 w-5" />
-              <span className="text-[11px] font-semibold leading-none">
+              <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden text-[10px] font-semibold leading-none md:inline">
                 Chat
               </span>
               {displayedMessages.length > 0 && !isChatOpen && (
-                <span className="absolute right-1.5 top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-[#1b1108]">
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-[#1b1108]">
                   {displayedMessages.length}
                 </span>
               )}
@@ -830,19 +830,20 @@ export function VoiceBar({
           </div>
 
           {/* Room Code + Audio Settings Trigger */}
-          <div className="flex w-full items-center justify-between gap-1.5 px-0.5">
+          <div className="flex items-center gap-0.5 sm:gap-1 md:w-full md:justify-between md:px-0.5">
             <button
               type="button"
               onClick={onCopyRoomCode}
               data-testid="table-room-code"
               title="Copy room invite link"
-              className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide text-[#f2e6d3]/90 hover:text-amber-300"
+              className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-white/5 px-1.5 py-1 text-[9.5px] font-semibold tracking-tight text-[#f2e6d3]/90 hover:text-amber-300 sm:px-2 sm:text-[10px] md:bg-transparent md:p-0 md:text-[11px] md:tracking-wide"
             >
-              <span>Room: {roomCode}</span>
+              <span className="hidden md:inline">Room: </span>
+              <span>{roomCode}</span>
               {copiedRoom ? (
-                <Check className="h-3 w-3 text-emerald-400" />
+                <Check className="h-2.5 w-2.5 shrink-0 text-emerald-400 sm:h-3 sm:w-3" />
               ) : (
-                <Copy className="h-2.5 w-2.5 opacity-60" />
+                <Copy className="h-2.5 w-2.5 shrink-0 opacity-60" />
               )}
             </button>
 
@@ -854,7 +855,7 @@ export function VoiceBar({
               }}
               aria-label="Voice & Village 3G settings"
               title="Voice, Village 3G & Rain settings"
-              className={`rounded-md p-1 transition ${
+              className={`rounded-lg p-1 transition sm:p-1.5 md:p-1 ${
                 isSettingsOpen
                   ? 'bg-amber-400/25 text-amber-200'
                   : 'text-[#d7c4a3]/80 hover:bg-white/10 hover:text-white'
