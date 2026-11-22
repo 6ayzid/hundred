@@ -205,6 +205,8 @@ export interface UseGameSyncOptions {
   roomCode: string;
   username: string;
   enabled: boolean;
+  /** When true (e.g. joining via invite link or Join button), do not create a brand-new room if no host exists. */
+  joinOnly?: boolean;
 }
 
 export interface UseGameSyncResult {
@@ -218,6 +220,7 @@ export interface UseGameSyncResult {
   chatMessages: ChatMessage[];
   remainingMs: number | null;
   connectionStatus: ConnectionStatus;
+  roomUnavailableReason: string | null;
   dispatchAction: (action: GameAction) => void;
   sendChat: (text: string, isBanter?: boolean) => void;
   leaveRoom: () => void;

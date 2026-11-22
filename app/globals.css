@@ -270,156 +270,266 @@
 }
 
 /* ==========================================================================
-   Clean Handcrafted Tabletop Surface — হানডেট HUNDRED
-   Zero bloated AI images, matte woven reed texture, crisp contrast
+   Handcrafted Bangladeshi Pati Mat & Jute Rice Sack Surface — হানডেট HUNDRED
+   Pure CSS/SVG weave (0 KB AI JPG bloat) with warm lantern lighting
    ========================================================================== */
 
 .pati-table-surface {
-  background-color: #211610;
+  background-color: #2b1d12;
   background-image:
+    /* Warm hurricane lantern (kupibati) amber pool from top-right */
     radial-gradient(
-      circle at 86% 12%,
-      rgba(232, 168, 76, 0.14) 0%,
-      rgba(176, 102, 36, 0.05) 28%,
-      transparent 58%
+      circle at 89% 11%,
+      rgba(255, 198, 92, 0.24) 0%,
+      rgba(224, 134, 42, 0.1) 28%,
+      transparent 56%
     ),
+    /* Cozy rainy-night edge vignette */
     radial-gradient(
-      ellipse 88% 82% at 50% 48%,
-      rgba(92, 54, 34, 0.42) 0%,
-      rgba(36, 22, 15, 0.72) 68%,
-      rgba(16, 10, 7, 0.96) 100%
+      ellipse 92% 88% at 50% 48%,
+      rgba(116, 80, 44, 0.34) 0%,
+      rgba(48, 31, 18, 0.64) 64%,
+      rgba(16, 10, 6, 0.94) 100%
     ),
+    /* Textured jute rice sack (chaler bosta) burlap warp & weft */
     repeating-linear-gradient(
       0deg,
-      rgba(198, 138, 72, 0.055) 0px,
-      rgba(198, 138, 72, 0.055) 2px,
+      rgba(198, 152, 92, 0.08) 0px,
+      rgba(198, 152, 92, 0.08) 2px,
       transparent 2px,
-      transparent 6px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(156, 74, 48, 0.06) 0px,
-      rgba(156, 74, 48, 0.06) 2px,
-      transparent 2px,
-      transparent 8px
-    );
-}
-
-.pati-inner-mat {
-  background-color: #462a1c;
-  background-image:
-    radial-gradient(
-      ellipse 80% 75% at 50% 46%,
-      rgba(168, 108, 54, 0.24) 0%,
-      rgba(74, 40, 24, 0.12) 65%,
-      rgba(26, 14, 9, 0.48) 100%
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(219, 162, 92, 0.08) 0px,
-      rgba(219, 162, 92, 0.08) 1.5px,
-      transparent 1.5px,
       transparent 5px
     ),
     repeating-linear-gradient(
       90deg,
-      rgba(128, 44, 32, 0.1) 0px,
-      rgba(128, 44, 32, 0.1) 1.5px,
-      transparent 1.5px,
-      transparent 7px
+      rgba(146, 102, 52, 0.09) 0px,
+      rgba(146, 102, 52, 0.09) 2px,
+      transparent 2px,
+      transparent 6px
+    );
+}
+
+.pati-inner-mat {
+  background-color: #7c2b1a;
+  background-image:
+    /* Warm lantern ambient wash across the mat */
+    radial-gradient(
+      circle at 92% 10%,
+      rgba(255, 210, 114, 0.26) 0%,
+      rgba(226, 148, 48, 0.1) 30%,
+      transparent 58%
+    ),
+    /* Soft table depth vignette keeping center warm & legible */
+    radial-gradient(
+      ellipse 84% 78% at 50% 48%,
+      rgba(218, 152, 56, 0.26) 0%,
+      rgba(138, 44, 24, 0.16) 58%,
+      rgba(44, 15, 9, 0.56) 100%
+    ),
+    /* Terracotta-crimson & mustard-ochre Bangladeshi pati diagonal reed weave */
+    repeating-linear-gradient(
+      45deg,
+      rgba(226, 166, 66, 0.15) 0px,
+      rgba(226, 166, 66, 0.15) 3px,
+      transparent 3px,
+      transparent 10px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(162, 42, 26, 0.22) 0px,
+      rgba(162, 42, 26, 0.22) 3px,
+      transparent 3px,
+      transparent 10px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(240, 186, 92, 0.08) 0px,
+      rgba(240, 186, 92, 0.08) 1px,
+      transparent 1px,
+      transparent 4px
     );
   box-shadow:
-    inset 0 0 0 1px rgba(214, 158, 92, 0.28),
-    inset 0 0 0 6px rgba(38, 21, 13, 0.55),
-    inset 0 0 0 7px rgba(188, 122, 62, 0.22),
-    0 18px 44px rgba(0, 0, 0, 0.55);
+    inset 0 0 0 2px rgba(232, 174, 78, 0.42),
+    inset 0 0 0 6px rgba(68, 22, 12, 0.78),
+    inset 0 0 0 8px rgba(214, 144, 52, 0.34),
+    0 20px 46px rgba(0, 0, 0, 0.58);
 }
 
 .glass-pill {
-  background: rgba(24, 16, 12, 0.84);
-  border: 1px solid rgba(235, 210, 175, 0.18);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  background: rgba(24, 14, 10, 0.84);
+  border: 1px solid rgba(240, 212, 168, 0.2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.36);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 .visiting-card-paper {
   background-color: #faf7f0;
-  background-image: linear-gradient(160deg, #fcfaf4 0%, #f4ede0 100%);
-  border: 1px solid #d9ccb4;
+  background-image: linear-gradient(160deg, #fcfaf4 0%, #f3ecdd 100%);
+  border: 1px solid #d7c9ae;
   box-shadow:
-    0 6px 14px rgba(0, 0, 0, 0.36),
-    0 1px 3px rgba(0, 0, 0, 0.22);
+    0 7px 16px rgba(0, 0, 0, 0.42),
+    0 1px 3px rgba(0, 0, 0, 0.24);
 }
 
 .navy-card-back {
-  background: linear-gradient(155deg, #273e6e 0%, #1a2c52 100%);
+  background: linear-gradient(155deg, #274074 0%, #17294d 100%);
   border: 1.5px solid #efe7d8;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
+/* Dark navy-blue stacked visiting-card deck matching card backs with crisp paper deck edges */
 .captured-deck-3d {
-  background: linear-gradient(160deg, #a62b35 0%, #7d1c24 100%);
-  border: 1px solid rgba(245, 176, 180, 0.32);
+  background: linear-gradient(155deg, #29447a 0%, #16274b 100%);
+  border: 1.5px solid #efe7d8;
   box-shadow:
-    0 2px 0 #5f141a,
-    0 4px 0 #470e13,
-    0 8px 14px rgba(0, 0, 0, 0.45);
+    0 2px 0 #ebe3d3,
+    0 3.5px 0 #1b2f58,
+    0 5.5px 0 #e4dac7,
+    0 7px 0 #132240,
+    0 11px 18px rgba(0, 0, 0, 0.5);
 }
 
-.gold-coin-badge {
-  background: linear-gradient(180deg, #f3cd67 0%, #cf9524 100%);
-  border: 1px solid #fae39c;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-}
+/* ==========================================================================
+   Purposeful 60fps Tabletop Animations
+   ========================================================================== */
 
-@keyframes center-card-pop {
+@keyframes play-from-top {
   0% {
     opacity: 0;
-    transform: scale(0.82) translateY(12px);
+    transform: translateY(-56px) scale(0.84) rotate(-5deg);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateY(0) scale(1) rotate(0deg);
   }
 }
 
-.animate-center-card-pop {
-  animation: center-card-pop 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+@keyframes play-from-bottom {
+  0% {
+    opacity: 0;
+    transform: translateY(62px) scale(0.88) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes play-from-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-64px) scale(0.84) rotate(-8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes play-from-right {
+  0% {
+    opacity: 0;
+    transform: translateX(64px) scale(0.84) rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+.animate-play-from-top {
+  animation: play-from-top 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.animate-play-from-bottom {
+  animation: play-from-bottom 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.animate-play-from-left {
+  animation: play-from-left 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.animate-play-from-right {
+  animation: play-from-right 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+@keyframes trick-win-glow {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0));
+  }
+  45% {
+    transform: scale(1.09) translateY(-4px);
+    filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.85));
+  }
+  100% {
+    transform: scale(1.05) translateY(-2px);
+    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.65));
+  }
+}
+
+.animate-trick-win-glow {
+  animation: trick-win-glow 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes points-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-points-pop {
+  animation: points-pop 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes deck-riffle-left {
   0%,
   100% {
-    transform: translateX(-5px) rotate(-6deg);
+    transform: translateX(-4px) rotate(-4deg);
   }
-  50% {
-    transform: translateX(-18px) rotate(-12deg);
+  45% {
+    transform: translateX(-22px) translateY(-4px) rotate(-13deg);
+  }
+  70% {
+    transform: translateX(-6px) rotate(-3deg);
   }
 }
 
 @keyframes deck-riffle-right {
   0%,
   100% {
-    transform: translateX(5px) rotate(6deg);
+    transform: translateX(4px) rotate(4deg);
   }
-  50% {
-    transform: translateX(18px) rotate(12deg);
+  45% {
+    transform: translateX(22px) translateY(-4px) rotate(13deg);
+  }
+  70% {
+    transform: translateX(6px) rotate(3deg);
   }
 }
 
 .animate-riffle-left {
-  animation: deck-riffle-left 300ms ease-in-out infinite;
+  animation: deck-riffle-left 360ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .animate-riffle-right {
-  animation: deck-riffle-right 300ms ease-in-out infinite;
+  animation: deck-riffle-right 360ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes deal-fan-in {
   0% {
     opacity: 0;
-    transform: translateY(-48px) scale(0.75);
+    transform: translateY(-68px) scale(0.72);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(3px) scale(1.02);
   }
   100% {
     opacity: 1;
@@ -428,7 +538,72 @@
 }
 
 .animate-deal-fan-in {
-  animation: deal-fan-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: deal-fan-in 380ms cubic-bezier(0.18, 0.9, 0.28, 1) both;
 }
+
+@keyframes panel-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-panel-enter {
+  animation: panel-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes lantern-flicker {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  65% {
+    opacity: 0.84;
+    transform: scale(0.97);
+  }
+}
+
+.animate-lantern-flicker {
+  animation: lantern-flicker 3.6s ease-in-out infinite;
+}
+
+.chat-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: rgba(235, 200, 145, 0.28);
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-play-from-top,
+  .animate-play-from-bottom,
+  .animate-play-from-left,
+  .animate-play-from-right,
+  .animate-trick-win-glow,
+  .animate-points-pop,
+  .animate-riffle-left,
+  .animate-riffle-right,
+  .animate-deal-fan-in,
+  .animate-panel-enter,
+  .animate-lantern-flicker {
+    animation: none !important;
+  }
+}
+
 
 

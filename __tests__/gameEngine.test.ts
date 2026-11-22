@@ -458,14 +458,20 @@ describe('5. Bidding phase rules, boundaries & negative guards (F-09)', () => {
     expect(state.seats[starter].hand).toContain(1);
     expect(state.activeSeat).toBe(starter);
 
+    // Simultaneous bidding: seats can declare their call in any order (e.g. reverse order)
     const bids = [50, 50, 300, 500];
+    const order = [
+      ((starter + 2) % 4) as SeatIndex,
+      ((starter + 0) % 4) as SeatIndex,
+      ((starter + 3) % 4) as SeatIndex,
+      ((starter + 1) % 4) as SeatIndex,
+    ];
     for (let i = 0; i < 4; i += 1) {
-      const seat = ((starter + i) % 4) as SeatIndex;
+      const seat = order[i];
       state = applyAction(state, { type: 'PLACE_CALL', seatIndex: seat, call: bids[i] }, 2_100 + i * 100);
       expect(state.seats[seat].call).toBe(bids[i]);
       if (i < 3) {
         expect(state.phase).toBe('BIDDING');
-        expect(state.activeSeat).toBe(((starter + i + 1) % 4) as SeatIndex);
       }
     }
 
@@ -476,7 +482,7 @@ describe('5. Bidding phase rules, boundaries & negative guards (F-09)', () => {
     expect(state.turnDeadline).toBe(2_400 + PLAY_TIMEOUT_MS);
   });
 
-  it('rejects out-of-range, non-step-10, out-of-turn, and wrong-phase calls without mutation', () => {
+  it('rejects out-of-range, non-step-10, duplicate-seat, and wrong-phase calls without mutation', () => {
     const lobby = createInitialLobbyState('TNG-KM47', 'host-1', 'Rafiq', 1_000);
     expect(applyAction(lobby, { type: 'PLACE_CALL', seatIndex: 0, call: 50 }, 1_100)).toBe(
       lobby,
@@ -497,19 +503,22 @@ describe('5. Bidding phase rules, boundaries & negative guards (F-09)', () => {
       expect(next.seats[firstSeat].call).toBeNull();
     }
 
-    // Out of turn and out of range seat
-    expect(applyAction(bidding, { type: 'PLACE_CALL', seatIndex: otherSeat, call: 100 }, 2_100)).toBe(
-      bidding,
-    );
+    // Simultaneous call from another seat succeeds, but calling twice from the same seat is rejected
+    const afterOther = applyAction(bidding, { type: 'PLACE_CALL', seatIndex: otherSeat, call: 100 }, 2_100);
+    expect(afterOther.seats[otherSeat].call).toBe(100);
+    expect(
+      applyAction(afterOther, { type: 'PLACE_CALL', seatIndex: otherSeat, call: 150 }, 2_150),
+    ).toBe(afterOther);
+
+    // Out of range seat rejected
     expect(
       applyAction(bidding, { type: 'PLACE_CALL', seatIndex: unsafeSeat(4), call: 100 }, 2_100),
     ).toBe(bidding);
 
     // Wrong phase after bidding completes
     let playing = bidding;
-    for (let i = 0; i < 4; i += 1) {
-      const s = playing.activeSeat;
-      playing = applyAction(playing, { type: 'PLACE_CALL', seatIndex: s, call: 100 }, 2_200 + i);
+    for (const seat of [0, 1, 2, 3] as SeatIndex[]) {
+      playing = applyAction(playing, { type: 'PLACE_CALL', seatIndex: seat, call: 100 }, 2_200 + seat);
     }
     expect(playing.phase).toBe('PLAYING');
     expect(applyAction(playing, { type: 'PLACE_CALL', seatIndex: playing.activeSeat, call: 100 }, 3_000)).toBe(
@@ -1042,21 +1051,14 @@ describe('9. Timeout constants & shot-clock auto-resolution (F-09, F-10, F-15)',
     expect(resolveTimeoutOrTransition(state, state.turnDeadline! - 1)).toBe(state);
     expect(resolveTimeoutOrTransition(state, state.turnDeadline! - 10_000)).toBe(state);
 
-    // Seat 2 holds card 1 in targetOrder ([1, 25, 50, 60, 75]), so Seat 2 starts!
-    expect(state.activeSeat).toBe(2);
+    // Seat 2 holds card 1 in targetOrder ([1, 25, 50, 60, 75]), so Seat 2 starts Trick 1!
+    expect(state.roundStarterSeat).toBe(2);
 
-    // At turnDeadline -> auto-calls 50 for Seat 2
+    // At simultaneous bidding turnDeadline -> auto-calls 50 for ALL uncalled seats & enters PLAYING with holder of 1 leading!
     state = resolveTimeoutOrTransition(state, state.turnDeadline!);
-    expect(state.seats[2].call).toBe(50);
-    expect(state.activeSeat).toBe(3);
-    expect(state.turnDeadline).toBe(45_000 + BID_TIMEOUT_MS);
-
-    // Finish remaining bids
-    for (const idx of [3, 0, 1] as const) {
-      state = resolveTimeoutOrTransition(state, state.turnDeadline! + 10);
+    for (const idx of [0, 1, 2, 3] as const) {
       expect(state.seats[idx].call).toBe(50);
     }
-
     expect(state.phase).toBe('PLAYING');
     expect(state.activeSeat).toBe(2);
     expect(state.turnDeadline).toBe(state.emittedAt + PLAY_TIMEOUT_MS);
@@ -1330,16 +1332,8 @@ describe('10. Bot AI, M3 helpers, deep immutability & Node-safe pure imports', (
     );
     expect(Object.is(removedNegZeroBot.seats[0].seatIndex, 0)).toBe(true);
 
-    let bidAt0 = bidding;
-    while (bidAt0.activeSeat !== 0) {
-      bidAt0 = applyAction(
-        bidAt0,
-        { type: 'PLACE_CALL', seatIndex: bidAt0.activeSeat, call: 50 },
-        2_050,
-      );
-    }
     const calledNegZero = applyAction(
-      bidAt0,
+      bidding,
       { type: 'PLACE_CALL', seatIndex: -0 as SeatIndex, call: 50 },
       2_100,
     );

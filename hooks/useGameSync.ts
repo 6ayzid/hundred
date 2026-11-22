@@ -396,7 +396,7 @@ function parsePresenceMetas(rawPresenceState: unknown): PresenceMeta[] {
  * reconnect caching, and offline local fallback hook for "হান্ডেট (Hundred)".
  */
 export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
-  const { roomCode, username, enabled } = options;
+  const { roomCode, username, enabled, joinOnly = false } = options;
 
   const normalizedRoomCode = useMemo(
     () => normalizeRoomCode(roomCode ?? ''),
@@ -416,7 +416,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     getSupabaseClient() !== null ? 'supabase' : 'local',
   );
   const [rawState, setState] = useState<GameState | null>(() => {
-    if (!validRoom) {
+    if (!validRoom || joinOnly) {
       return null;
     }
     return hydrateInitialRoomState(
@@ -439,12 +439,17 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
   const [rawPromotedHostSeat, setPromotedHostSeat] =
     useState<SeatIndex | null>(null);
   const [rawRemainingMs, setRemainingMs] = useState<number | null>(null);
+  const [rawRoomUnavailableReason, setRoomUnavailableReason] = useState<
+    string | null
+  >(null);
 
-  // When roomCode or enabled toggles at render time, transition synchronously
+  // When roomCode, joinOnly, or enabled toggles at render time, transition synchronously
   const [activeRoomKey, setActiveRoomKey] = useState<string>(() =>
-    validRoom ? `${normalizedRoomCode}:${syncMode}` : '',
+    validRoom ? `${normalizedRoomCode}:${syncMode}:${joinOnly ? 'join' : 'create'}` : '',
   );
-  const targetRoomKey = validRoom ? `${normalizedRoomCode}:${syncMode}` : '';
+  const targetRoomKey = validRoom
+    ? `${normalizedRoomCode}:${syncMode}:${joinOnly ? 'join' : 'create'}`
+    : '';
   if (activeRoomKey !== targetRoomKey) {
     setActiveRoomKey(targetRoomKey);
     if (!validRoom) {
@@ -453,23 +458,27 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
       setPresenceMetas([]);
       setPromotedHostSeat(null);
       setRemainingMs(null);
+      setRoomUnavailableReason(null);
     } else {
       const nextMode: SyncMode =
         getSupabaseClient() !== null ? 'supabase' : 'local';
       if (nextMode !== syncMode) {
         setSyncMode(nextMode);
       }
-      const nextHydrated = hydrateInitialRoomState(
-        normalizedRoomCode,
-        clientId,
-        trimmedUsername,
-        nextMode,
-      );
+      const nextHydrated = joinOnly
+        ? null
+        : hydrateInitialRoomState(
+            normalizedRoomCode,
+            clientId,
+            trimmedUsername,
+            nextMode,
+          );
       setState(nextHydrated);
       setConnectionStatus(nextMode === 'supabase' ? 'connecting' : 'local');
       setPresenceMetas([]);
       setPromotedHostSeat(null);
       setRemainingMs(null);
+      setRoomUnavailableReason(null);
     }
   }
 
@@ -477,6 +486,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
   const connectionStatus: ConnectionStatus = validRoom
     ? rawConnectionStatus
     : 'idle';
+  const roomUnavailableReason = validRoom ? rawRoomUnavailableReason : null;
   const presenceMetas = useMemo(
     () => (validRoom ? rawPresenceMetas : []),
     [validRoom, rawPresenceMetas],
@@ -778,10 +788,25 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
 
           clockOffsetRef.current = incoming.emittedAt - Date.now();
           setPromotedHostSeat(null);
+          const seatIdx = findMySeatIndex(incoming, clientIdRef.current);
+          if (joinOnly && seatIdx === null) {
+            if (incoming.phase !== 'LOBBY') {
+              setRoomUnavailableReason(
+                `Room ${incoming.roomCode} is already in progress.`,
+              );
+              return;
+            }
+            const hasEmptySeat = incoming.seats.some((s) => s.type === 'EMPTY');
+            if (!hasEmptySeat) {
+              setRoomUnavailableReason(
+                `Room ${incoming.roomCode} is full (4/4 players).`,
+              );
+              return;
+            }
+          }
           stateRef.current = incoming;
           setState(incoming);
           saveCachedGameState(incoming);
-          const seatIdx = findMySeatIndex(incoming, clientIdRef.current);
           writeSessionSeatIndex(
             incoming.roomCode,
             seatIdx,
@@ -829,6 +854,15 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           if (!isHostRef.current || !stateRef.current) {
             return;
           }
+          // Only the room creator / Host may start the match or manage bots
+          if (
+            event.action.type === 'START_MATCH' ||
+            event.action.type === 'FILL_BOTS_AND_START' ||
+            event.action.type === 'ADD_BOT' ||
+            event.action.type === 'REMOVE_BOT'
+          ) {
+            return;
+          }
           const current = stateRef.current;
           const nextState = applyAction(current, event.action, Date.now());
           if (nextState !== current && nextState.version > current.version) {
@@ -838,7 +872,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
         }
       }
     },
-    [commitAndPersistState, sendBroadcastEvent],
+    [commitAndPersistState, sendBroadcastEvent, joinOnly],
   );
 
   // Main lifecycle effect: Local / Supabase channel subscription & storage listener
@@ -965,20 +999,64 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           }
         };
 
-        void fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'JOIN',
-            clientId: activeClientId,
-            username: usernameRef.current,
-          }),
-        })
-          .then((res) => (res.ok ? res.json() : null))
-          .then((data) => {
-            if (data) adoptRelayPayload(data);
+        if (joinOnly) {
+          void fetch(endpoint, { cache: 'no-store' })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (relayCancelled) return;
+              if (!data?.state) {
+                setRoomUnavailableReason(
+                  `Room ${normalizedRoomCode} wasn't found or has closed.`,
+                );
+                return;
+              }
+              const s: GameState = data.state;
+              const existingSeat = findMySeatIndex(s, activeClientId);
+              if (existingSeat === null) {
+                if (s.phase !== 'LOBBY') {
+                  setRoomUnavailableReason(
+                    `Room ${normalizedRoomCode} is already in progress.`,
+                  );
+                  return;
+                }
+                if (!s.seats.some((seat) => seat.type === 'EMPTY')) {
+                  setRoomUnavailableReason(
+                    `Room ${normalizedRoomCode} is full (4/4 players).`,
+                  );
+                  return;
+                }
+              }
+              return fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'JOIN',
+                  clientId: activeClientId,
+                  username: usernameRef.current,
+                }),
+              })
+                .then((res) => (res.ok ? res.json() : null))
+                .then((joined) => {
+                  if (joined) adoptRelayPayload(joined);
+                });
+            })
+            .catch(() => {});
+        } else {
+          void fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'JOIN',
+              clientId: activeClientId,
+              username: usernameRef.current,
+            }),
           })
-          .catch(() => {});
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (data) adoptRelayPayload(data);
+            })
+            .catch(() => {});
+        }
 
         relayInterval = setInterval(() => {
           if (relayCancelled) return;
@@ -1119,11 +1197,19 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           });
         }
 
-        // If no state exists yet and no remote Host replies with STATE_SNAPSHOT
-        // within the bootstrap window, initialize lobby state as Seat 0 Host.
+        // If no state exists yet and no remote Host replies with STATE_SNAPSHOT:
+        // - In joinOnly mode, report that the room wasn't found instead of creating a phantom room.
+        // - In create mode, initialize lobby state as Seat 0 Host.
         if (!stateRef.current) {
+          const waitMs = joinOnly ? 2600 : SUPABASE_BOOTSTRAP_TIMEOUT_MS;
           bootstrapTimer = setTimeout(() => {
             if (!stateRef.current && validRoomRef.current) {
+              if (joinOnly) {
+                setRoomUnavailableReason(
+                  `Room ${normalizedRoomCode} wasn't found or has closed.`,
+                );
+                return;
+              }
               const metas = presenceMetasRef.current;
               const otherSeatedHost = metas.some(
                 (m) =>
@@ -1141,7 +1227,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
                 commitAndPersistState(created, true);
               }
             }
-          }, SUPABASE_BOOTSTRAP_TIMEOUT_MS);
+          }, waitMs);
         }
       }
     });
@@ -1175,6 +1261,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
   }, [
     validRoom,
     normalizedRoomCode,
+    joinOnly,
     commitAndPersistState,
     handleIncomingBroadcast,
     sendBroadcastEvent,
@@ -1326,7 +1413,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     commitAndPersistState,
   ]);
 
-  // AI Bot Turn Scheduler (Host only, asynchronous 650ms timer)
+  // AI Bot Turn Scheduler (Host only; simultaneous bot calls during BIDDING, turn-based during PLAYING)
   useEffect(() => {
     if (!validRoom || !isHost || !state) {
       return;
@@ -1336,14 +1423,29 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
       return;
     }
 
-    const activeSeatIndex = state.activeSeat;
-    const activeSeatObj = state.seats[activeSeatIndex];
-    if (!activeSeatObj || activeSeatObj.type !== 'AI') {
+    let targetBotSeatIndex: SeatIndex | null = null;
+    if (state.phase === 'BIDDING') {
+      const uncalledBot = state.seats.find(
+        (s) => s.type === 'AI' && s.call === null,
+      );
+      if (uncalledBot) {
+        targetBotSeatIndex = uncalledBot.seatIndex;
+      }
+    } else {
+      const activeSeatObj = state.seats[state.activeSeat];
+      if (activeSeatObj && activeSeatObj.type === 'AI') {
+        targetBotSeatIndex = activeSeatObj.seatIndex;
+      }
+    }
+
+    if (targetBotSeatIndex === null) {
       return;
     }
 
+    const botSeatIdx = targetBotSeatIndex;
     const expectedVersion = state.version;
     const expectedMatchId = state.matchId;
+    const delayMs = state.phase === 'BIDDING' ? 350 : BOT_TURN_DELAY_MS;
 
     const botTimer = setTimeout(() => {
       const current = stateRef.current;
@@ -1356,19 +1458,22 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
         return;
       }
 
-      const seat = current.seats[current.activeSeat];
+      const seat = current.seats[botSeatIdx];
       if (!seat || seat.type !== 'AI') {
         return;
       }
 
       if (current.phase === 'BIDDING') {
+        if (seat.call !== null) {
+          return;
+        }
         const existingCalls = current.seats.map((s) => s.call);
         const call = computeBotCall(seat.hand, existingCalls);
         const nextState = applyAction(
           current,
           {
             type: 'PLACE_CALL',
-            seatIndex: current.activeSeat,
+            seatIndex: botSeatIdx,
             call,
           },
           Date.now(),
@@ -1376,13 +1481,13 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
         if (nextState !== current && nextState.version > current.version) {
           commitAndPersistState(nextState, true);
         }
-      } else if (current.phase === 'PLAYING') {
-        const card = computeBotCard(current, current.activeSeat);
+      } else if (current.phase === 'PLAYING' && current.activeSeat === botSeatIdx) {
+        const card = computeBotCard(current, botSeatIdx);
         const nextState = applyAction(
           current,
           {
             type: 'PLAY_CARD',
-            seatIndex: current.activeSeat,
+            seatIndex: botSeatIdx,
             card,
           },
           Date.now(),
@@ -1391,7 +1496,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           commitAndPersistState(nextState, true);
         }
       }
-    }, BOT_TURN_DELAY_MS);
+    }, delayMs);
 
     return () => {
       clearTimeout(botTimer);
@@ -1504,6 +1609,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     presenceMetasRef.current = [];
     setPromotedHostSeat(null);
     setRemainingMs(null);
+    setRoomUnavailableReason(null);
     setConnectionStatus('idle');
   }, []);
 
@@ -1518,6 +1624,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     chatMessages,
     remainingMs,
     connectionStatus,
+    roomUnavailableReason,
     dispatchAction,
     sendChat,
     leaveRoom,

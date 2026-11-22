@@ -853,9 +853,6 @@ export function applyAction(
         return state;
       }
       const seatIndex = normalizeSeatIndex(action.seatIndex);
-      if (seatIndex !== state.activeSeat) {
-        return state;
-      }
       const actingSeat = state.seats[seatIndex];
       if (actingSeat.type === 'EMPTY' || actingSeat.call !== null) {
         return state;
@@ -864,20 +861,20 @@ export function applyAction(
         return state;
       }
 
-      const normalizedCall = action.call === 0 ? 0 : action.call;
+      const normalizedCall = action.call;
       const nextSeats = cloneSeats(state.seats);
       nextSeats[seatIndex] = {
         ...nextSeats[seatIndex],
         call: normalizedCall,
       };
 
-      const allCalled = nextSeats.every((seat) => seat.call !== null);
-      if (!allCalled) {
+      const firstUncalledSeat = nextSeats.find((seat) => seat.call === null);
+      if (firstUncalledSeat) {
         return {
           ...state,
           version: state.version + 1,
-          activeSeat: getNextSeat(seatIndex),
-          turnDeadline: timestamp + BID_TIMEOUT_MS,
+          activeSeat: firstUncalledSeat.seatIndex,
+          turnDeadline: state.turnDeadline ?? timestamp + BID_TIMEOUT_MS,
           emittedAt: timestamp,
           seats: nextSeats,
         };
@@ -1068,17 +1065,36 @@ export function resolveTimeoutOrTransition(
   }
 
   switch (state.phase) {
-    case 'BIDDING':
-      return applyAction(
-        state,
-        {
-          type: 'PLACE_CALL',
-          seatIndex: state.activeSeat,
-          call: AUTO_TIMEOUT_CALL,
-        },
-        timestamp,
-        rng,
-      );
+    case 'BIDDING': {
+      const nextSeats = cloneSeats(state.seats);
+      let changed = false;
+      for (const idx of SEAT_INDICES) {
+        if (nextSeats[idx].type !== 'EMPTY' && nextSeats[idx].call === null) {
+          nextSeats[idx] = {
+            ...nextSeats[idx],
+            call: AUTO_TIMEOUT_CALL,
+          };
+          changed = true;
+        }
+      }
+      if (!changed) {
+        return state;
+      }
+      return {
+        ...state,
+        version: state.version + 1,
+        phase: 'PLAYING',
+        trickNumber: 1,
+        trickLeaderSeat: state.roundStarterSeat,
+        activeSeat: state.roundStarterSeat,
+        turnDeadline: timestamp + PLAY_TIMEOUT_MS,
+        emittedAt: timestamp,
+        seats: nextSeats,
+        currentTrick: [],
+        lastTrickWinnerSeat: null,
+        lastTrickPoints: 0,
+      };
+    }
 
     case 'PLAYING': {
       if (!isValidSeatIndex(state.activeSeat)) {

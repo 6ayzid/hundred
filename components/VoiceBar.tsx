@@ -598,6 +598,29 @@ export function VoiceBar({
     canRequestToken && Boolean(activeToken) && !tokenFailed;
   const isMicActive = isOpenMic || isHoldingPtt;
 
+  const chatListRef = useRef<HTMLUListElement | null>(null);
+  useEffect(() => {
+    if (!isChatOpen) return;
+    const list = chatListRef.current;
+    if (!list) return;
+    if (typeof list.scrollTo === 'function') {
+      list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+    } else {
+      list.scrollTop = list.scrollHeight;
+    }
+  }, [displayedMessages.length, isChatOpen]);
+
+  const formatMsgTime = (ts: number): string => {
+    try {
+      return new Date(ts).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return '';
+    }
+  };
+
   if (compact) {
     return (
       <div
@@ -638,11 +661,80 @@ export function VoiceBar({
             data-testid="chat-drawer"
             role="region"
             aria-label="Bangla and Banglish Chat Drawer"
-            className="glass-pill mb-2.5 w-[290px] sm:w-[320px] rounded-2xl p-3 text-[#faf3e6] shadow-2xl"
+            className="glass-pill animate-panel-enter mb-2.5 flex w-[295px] flex-col overflow-hidden rounded-2xl border-amber-300/25 text-[#faf3e6] shadow-2xl sm:w-[330px]"
           >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-3 py-2">
+              <div className="flex items-center gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5 text-amber-300" />
+                <span className="text-xs font-bold tracking-wide text-[#faf3e6]">
+                  Table Chat
+                </span>
+                {displayedMessages.length > 0 && (
+                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#d8c7ae]">
+                    {displayedMessages.length}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleChatDrawer}
+                aria-label="Close chat"
+                className="rounded-md px-1.5 py-0.5 text-xs font-bold text-[#cbb89d] transition hover:bg-white/10 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Auto-scrolling Message Bubbles */}
+            <ul
+              ref={chatListRef}
+              data-testid="chat-history-list"
+              className="chat-scroll flex max-h-44 min-h-[112px] flex-col gap-2 overflow-y-auto px-3 py-2.5"
+            >
+              {displayedMessages.length === 0 ? (
+                <li className="my-auto py-4 text-center text-[11px] text-[#cbb89d]/85">
+                  Send a quick Bangla banter or message below.
+                </li>
+              ) : (
+                displayedMessages.map((msg) => {
+                  const isMine =
+                    msg.senderId === clientId ||
+                    (msg.senderId === 'local-client' && msg.username === username);
+                  return (
+                    <li
+                      key={msg.id}
+                      data-chat-message="true"
+                      data-testid="chat-message-item"
+                      className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
+                    >
+                      <div className="mb-0.5 flex items-center gap-1.5 px-1 text-[10px] text-[#cbb89d]/85">
+                        <span className="font-semibold text-amber-200/95">
+                          {isMine ? 'You' : msg.username}
+                        </span>
+                        <span className="opacity-65">
+                          {formatMsgTime(msg.timestamp)}
+                        </span>
+                      </div>
+                      <div
+                        className={`max-w-[85%] break-words rounded-2xl px-3 py-1.5 text-xs leading-snug shadow-sm ${
+                          isMine
+                            ? 'rounded-tr-sm border border-amber-300/35 bg-amber-400/20 text-[#fff6e5]'
+                            : 'rounded-tl-sm border border-white/12 bg-white/10 text-[#f5ecdf]'
+                        }`}
+                      >
+                        {msg.text}
+                      </div>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+
+            {/* Quick Bangla Banter Chips */}
             <div
               data-testid="banter-chips-row"
-              className="mb-2 flex flex-wrap gap-1.5"
+              className="flex flex-wrap gap-1 border-t border-white/10 bg-black/20 px-2.5 py-2"
             >
               {BANTER_CHIPS.map((chip) => (
                 <button
@@ -650,57 +742,33 @@ export function VoiceBar({
                   type="button"
                   data-testid={`banter-chip-${chip}`}
                   onClick={() => handleSendMessage(chip, true)}
-                  className="rounded-full border border-amber-400/40 bg-amber-950/75 px-2.5 py-1 text-[11px] font-semibold text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108]"
+                  className="rounded-full border border-amber-300/30 bg-amber-500/12 px-2.5 py-0.5 text-[11px] font-semibold text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108] active:scale-95"
                 >
                   {chip}
                 </button>
               ))}
             </div>
 
-            <ul
-              data-testid="chat-history-list"
-              className="mb-2 max-h-36 space-y-1.5 overflow-y-auto rounded-xl border border-white/10 bg-black/35 p-2"
-            >
-              {displayedMessages.length === 0 ? (
-                <li className="py-2 text-center text-[11px] text-[#cbb89d]">
-                  Tap a quick banter chip or type below.
-                </li>
-              ) : (
-                displayedMessages.map((msg) => (
-                  <li
-                    key={msg.id}
-                    data-chat-message="true"
-                    data-testid="chat-message-item"
-                    className="break-words rounded-lg bg-white/5 px-2.5 py-1 text-xs leading-snug"
-                  >
-                    <span className="font-bold text-amber-300">
-                      {msg.username}:{' '}
-                    </span>
-                    <span>{msg.text}</span>
-                  </li>
-                ))
-              )}
-            </ul>
-
+            {/* Pill Input Row */}
             <form
               onSubmit={handleChatFormSubmit}
-              className="flex items-center gap-1.5"
+              className="flex items-center gap-1.5 border-t border-white/10 bg-black/35 p-2"
             >
               <input
                 type="text"
                 aria-label="Chat message"
-                placeholder="Type Bangla/Banglish..."
+                placeholder="Type Bangla or Banglish…"
                 maxLength={MAX_CHAT_MESSAGE_LENGTH}
                 value={chatDraft}
                 onChange={(e) => setChatDraft(e.target.value)}
                 data-testid="chat-draft-input"
-                className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/45 px-2.5 py-1.5 text-xs text-white placeholder:text-stone-400 focus:border-amber-400 focus:outline-none"
+                className="min-w-0 flex-1 rounded-full border border-white/15 bg-black/50 px-3 py-1.5 text-xs text-white placeholder:text-stone-400 focus:border-amber-400 focus:outline-none"
               />
               <button
                 type="submit"
                 aria-label="Send"
                 data-testid="chat-send-button"
-                className="inline-flex items-center justify-center rounded-lg bg-amber-400 p-2 text-[#1b1108] transition hover:bg-amber-300"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[#1b1108] transition hover:bg-amber-300 active:scale-95"
               >
                 <Send className="h-3.5 w-3.5" />
               </button>
@@ -1061,12 +1129,59 @@ export function VoiceBar({
           data-testid="chat-drawer"
           role="region"
           aria-label="Bangla and Banglish Chat Drawer"
-          className="mt-2 w-full max-w-full overflow-x-hidden rounded-xl border border-amber-900/60 bg-stone-950/95 p-3 text-amber-100 shadow-xl backdrop-blur-md"
+          className="animate-panel-enter mt-2 w-full max-w-full overflow-hidden rounded-2xl border border-amber-300/25 bg-[#19100c]/95 text-[#faf3e6] shadow-2xl backdrop-blur-md"
         >
+          {/* Auto-scrolling Message Bubbles */}
+          <ul
+            ref={chatListRef}
+            data-testid="chat-history-list"
+            className="chat-scroll flex max-h-44 min-h-[96px] w-full max-w-full flex-col gap-2 overflow-y-auto overflow-x-hidden px-3 py-2.5"
+          >
+            {displayedMessages.length === 0 ? (
+              <li className="my-auto py-3 text-center text-xs text-[#cbb89d]/85">
+                Tap a quick banter chip or send a message below.
+              </li>
+            ) : (
+              displayedMessages.map((msg) => {
+                const isMine =
+                  msg.senderId === clientId ||
+                  (msg.senderId === 'local-client' && msg.username === username);
+                return (
+                  <li
+                    key={msg.id}
+                    data-chat-message="true"
+                    data-testid="chat-message-item"
+                    className={`flex max-w-full flex-col overflow-x-hidden break-all [overflow-wrap:anywhere] ${
+                      isMine ? 'items-end' : 'items-start'
+                    }`}
+                  >
+                    <div className="mb-0.5 flex items-center gap-1.5 px-1 text-[10px] text-[#cbb89d]/85">
+                      <span className="font-semibold text-amber-200/95">
+                        {msg.username}
+                      </span>
+                      <span className="opacity-65">
+                        {formatMsgTime(msg.timestamp)}
+                      </span>
+                    </div>
+                    <div
+                      className={`max-w-[85%] overflow-x-hidden break-all [overflow-wrap:anywhere] rounded-2xl px-3 py-1.5 text-xs leading-snug ${
+                        isMine
+                          ? 'rounded-tr-sm border border-amber-300/35 bg-amber-400/20 text-[#fff6e5]'
+                          : 'rounded-tl-sm border border-white/12 bg-white/10 text-[#f5ecdf]'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+
           {/* 4 1-Tap Bangla/Banglish Quick-Banter Chips */}
           <div
             data-testid="banter-chips-row"
-            className="mb-2.5 flex flex-wrap items-center gap-1.5"
+            className="flex flex-wrap items-center gap-1.5 border-t border-white/10 bg-black/25 px-3 py-2"
           >
             {BANTER_CHIPS.map((chip) => (
               <button
@@ -1074,61 +1189,33 @@ export function VoiceBar({
                 type="button"
                 data-testid={`banter-chip-${chip}`}
                 onClick={() => handleSendMessage(chip, true)}
-                className="rounded-full border border-amber-700/70 bg-amber-950/80 px-2.5 py-1 text-xs font-medium text-amber-200 transition hover:border-amber-400 hover:bg-amber-900/80"
+                className="rounded-full border border-amber-300/30 bg-amber-500/12 px-2.5 py-0.5 text-xs font-medium text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108] active:scale-95"
               >
                 {chip}
               </button>
             ))}
           </div>
 
-          {/* Chat Message History List */}
-          <ul
-            data-testid="chat-history-list"
-            className="mb-2.5 max-h-40 w-full max-w-full space-y-1.5 overflow-y-auto overflow-x-hidden rounded-lg border border-stone-800/80 bg-stone-900/70 p-2"
-          >
-            {displayedMessages.length === 0 ? (
-              <div className="py-2 text-center text-xs text-stone-400">
-                Tap a quick banter chip or send a message below.
-              </div>
-            ) : (
-              displayedMessages.map((msg) => (
-                <li
-                  key={msg.id}
-                  data-chat-message="true"
-                  data-testid="chat-message-item"
-                  className="max-w-full overflow-x-hidden break-all [overflow-wrap:anywhere] rounded-md bg-stone-950/80 px-2.5 py-1.5 text-xs leading-snug text-amber-100"
-                >
-                  <span className="font-semibold text-amber-300">
-                    {msg.username}:{' '}
-                  </span>
-                  <span className="break-all [overflow-wrap:anywhere]">
-                    {msg.text}
-                  </span>
-                </li>
-              ))
-            )}
-          </ul>
-
           {/* Custom Chat Input Row */}
           <form
             onSubmit={handleChatFormSubmit}
-            className="flex w-full max-w-full items-center gap-2"
+            className="flex w-full max-w-full items-center gap-2 border-t border-white/10 bg-black/35 p-2.5"
           >
             <input
               type="text"
               aria-label="Chat message"
-              placeholder="Type Bangla/Banglish banter..."
+              placeholder="Type Bangla or Banglish banter…"
               maxLength={MAX_CHAT_MESSAGE_LENGTH}
               value={chatDraft}
               onChange={(e) => setChatDraft(e.target.value)}
               data-testid="chat-draft-input"
-              className="min-w-0 flex-1 rounded-lg border border-stone-700 bg-stone-900 px-3 py-1.5 text-xs text-amber-100 placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
+              className="min-w-0 flex-1 rounded-full border border-white/15 bg-black/50 px-3.5 py-1.5 text-xs text-white placeholder:text-stone-400 focus:border-amber-400 focus:outline-none"
             />
             <button
               type="submit"
               aria-label="Send"
               data-testid="chat-send-button"
-              className="inline-flex items-center gap-1 rounded-lg border border-amber-600 bg-amber-700 px-3 py-1.5 text-xs font-semibold text-stone-950 transition hover:bg-amber-600"
+              className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-[#1b1108] transition hover:bg-amber-300 active:scale-95"
             >
               <Send className="h-3 w-3 shrink-0" />
               <span>Send</span>

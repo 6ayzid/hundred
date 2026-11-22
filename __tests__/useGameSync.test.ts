@@ -683,35 +683,29 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       });
 
       expect(result.current.state?.phase).toBe('BIDDING');
-      // If an AI bot holds card 1, let bots before Seat 0 call first
-      for (let guard = 0; guard < 3 && result.current.state?.activeSeat !== 0; guard += 1) {
+      // AI bots lock in simultaneously while Seat 0 hasn't called yet
+      for (let guard = 0; guard < 3; guard += 1) {
         act(() => {
-          vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
+          vi.advanceTimersByTime(400);
         });
       }
-      expect(result.current.state?.activeSeat).toBe(0);
+      expect(result.current.state?.phase).toBe('BIDDING');
       expect(result.current.state?.seats[0].call).toBeNull();
+      expect(result.current.state?.seats[1].call).not.toBeNull();
+      expect(result.current.state?.seats[2].call).not.toBeNull();
+      expect(result.current.state?.seats[3].call).not.toBeNull();
 
-      // Advance 20s (< 25s): Seat 0 still hasn't timed out
+      // Advance 20s (< 25s total): Seat 0 still hasn't timed out
       act(() => {
-        vi.advanceTimersByTime(20_000);
+        vi.advanceTimersByTime(18_000);
       });
       expect(result.current.state?.seats[0].call).toBeNull();
-      expect(result.current.state?.activeSeat).toBe(0);
 
-      // Advance remaining 5s (total 25_000ms): Seat 0 auto-calls 50
+      // Advance remaining ~6s (past 25_000ms deadline): Seat 0 auto-calls 50 & transitions to PLAYING
       act(() => {
-        vi.advanceTimersByTime(5_100);
+        vi.advanceTimersByTime(6_500);
       });
       expect(result.current.state?.seats[0].call).toBe(50);
-
-      // Step through any remaining AI bot calls (650ms each) until PLAYING
-      for (let botStep = 0; botStep < 4 && result.current.state?.phase === 'BIDDING'; botStep += 1) {
-        act(() => {
-          vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
-        });
-      }
-
       expect(result.current.state?.phase).toBe('PLAYING');
       // Let any AI bots leading before Seat 0 play first
       for (let guard = 0; guard < 3 && result.current.state?.activeSeat !== 0; guard += 1) {
@@ -896,7 +890,8 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       expect(result.current.isHost).toBe(true);
       expect(result.current.hostSeatIndex).toBe(1);
       expect(result.current.state?.seats[stalledSeat].call).toBe(50);
-      expect(result.current.state?.activeSeat).toBe((stalledSeat + 1) % 4);
+      expect(result.current.state?.phase).toBe('PLAYING');
+      expect(result.current.state?.activeSeat).toBe(result.current.state?.roundStarterSeat);
 
       expect(channel.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -911,7 +906,7 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
 
       const storedAfterFailover = loadCachedGameState('TNG-WD99');
       expect(storedAfterFailover?.seats[stalledSeat].call).toBe(50);
-      expect(storedAfterFailover?.activeSeat).toBe((stalledSeat + 1) % 4);
+      expect(storedAfterFailover?.phase).toBe('PLAYING');
     });
   });
 });

@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  Clock,
   LogOut,
   Minus,
   Plus,
@@ -26,10 +25,12 @@ import { ScoreboardModal } from '@/components/ScoreboardModal';
 import { SeatHub, type HubPosition } from '@/components/SeatHub';
 import { VoiceBar } from '@/components/VoiceBar';
 import {
+  BID_TIMEOUT_MS,
   CALL_STEP,
   getMatchRankings,
   MAX_CALL,
   MIN_CALL,
+  PLAY_TIMEOUT_MS,
   TOTAL_ROUNDS,
 } from '@/lib/gameEngine';
 import {
@@ -54,6 +55,71 @@ import {
   type SpeakingMap,
   type SyncMode,
 } from '@/lib/types';
+
+/**
+ * Handcrafted pure-SVG Bangladeshi village hurricane lantern (kupibati) — < 1 KB, zero image bloat.
+ */
+function KupibatiLantern({ paused }: { paused: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none relative flex items-center justify-center"
+    >
+      {/* Soft warm amber glow halo */}
+      <div
+        className={`absolute h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(255,196,86,0.42)_0%,rgba(232,140,36,0.14)_45%,transparent_72%)] ${
+          paused ? '' : 'animate-lantern-flicker'
+        }`}
+      />
+      <svg
+        width="54"
+        height="72"
+        viewBox="0 0 54 72"
+        fill="none"
+        className="relative drop-shadow-[0_8px_14px_rgba(0,0,0,0.6)]"
+      >
+        {/* Top ring handle */}
+        <circle cx="27" cy="6" r="4" stroke="#b9823c" strokeWidth="2" />
+        {/* Brass hood */}
+        <path d="M18 15C19 10.5 22.5 9 27 9C31.5 9 35 10.5 36 15H18Z" fill="#7d5324" stroke="#d49b4a" strokeWidth="1.2" />
+        <rect x="15" y="15" width="24" height="3.5" rx="1.75" fill="#9c6b2f" />
+        {/* Side wire guards */}
+        <path d="M17 18.5C11 26 11 40 16 49" stroke="#9e6d31" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M37 18.5C43 26 43 40 38 49" stroke="#9e6d31" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Curved glass globe */}
+        <path
+          d="M18 18.5H36C39 26 39 39 35.5 48.5H18.5C15 39 15 26 18 18.5Z"
+          fill="url(#kupibatiGlass)"
+          stroke="#f3cf82"
+          strokeOpacity="0.55"
+          strokeWidth="1.2"
+        />
+        {/* Flickering inner flame */}
+        <g className={paused ? '' : 'animate-lantern-flicker'} style={{ transformOrigin: '27px 40px' }}>
+          <path
+            d="M27 25C30.5 31 32 35.5 31 39.5C30.2 42.5 28.8 43.5 27 43.5C25.2 43.5 23.8 42.5 23 39.5C22 35.5 23.5 31 27 25Z"
+            fill="#ffb830"
+          />
+          <path
+            d="M27 30.5C29 34 29.6 37 29 39.5C28.6 41.2 27.9 42 27 42C26.1 42 25.4 41.2 25 39.5C24.4 37 25 34 27 30.5Z"
+            fill="#fff5c2"
+          />
+        </g>
+        {/* Wick holder & brass oil base */}
+        <rect x="23" y="44" width="8" height="4.5" rx="1" fill="#5e3b17" />
+        <path d="M14 48.5H40L43 60C43 62.5 40.8 64 38.5 64H15.5C13.2 64 11 62.5 11 60L14 48.5Z" fill="#70471e" stroke="#c98e3d" strokeWidth="1.3" />
+        <rect x="10" y="62.5" width="34" height="4.5" rx="2.25" fill="#4f3114" stroke="#b37b31" strokeWidth="1" />
+        <defs>
+          <radialGradient id="kupibatiGlass" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(27 35) rotate(90) scale(16 12)">
+            <stop stopColor="#ffe799" stopOpacity="0.65" />
+            <stop offset="0.65" stopColor="#e89428" stopOpacity="0.28" />
+            <stop offset="1" stopColor="#5a2e0c" stopOpacity="0.45" />
+          </radialGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
 
 function subscribeDesktopMedia(callback: () => void): () => void {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};
@@ -224,10 +290,23 @@ export function GameTable({
 
   const mySeat = state.seats[perspectiveSeat];
   const activeSeatObj = state.seats[state.activeSeat];
-  const isMyTurn =
+  const canPlaceCall =
+    state.phase === 'BIDDING' && mySeatIndex !== null && mySeat.call === null;
+  const isMyPlayTurn =
+    state.phase === 'PLAYING' &&
     mySeatIndex !== null &&
-    state.activeSeat === mySeatIndex &&
-    (state.phase === 'BIDDING' || state.phase === 'PLAYING');
+    state.activeSeat === mySeatIndex;
+  const calledCount = state.seats.filter((s) => s.call !== null).length;
+
+  const isSeatActiveTurn = (seat: GameState['seats'][number]): boolean => {
+    if (state.phase === 'BIDDING') {
+      return seat.type !== 'EMPTY' && seat.call === null;
+    }
+    if (state.phase === 'PLAYING') {
+      return state.activeSeat === seat.seatIndex;
+    }
+    return false;
+  };
 
   const trickCardBySeat = useMemo(() => {
     const map = new Map<SeatIndex, CardValue>();
@@ -256,6 +335,14 @@ export function GameTable({
 
   const remainingSeconds =
     remainingMs !== null ? Math.max(0, Math.ceil(remainingMs / 1000)) : null;
+  const totalTurnMs =
+    state.phase === 'BIDDING' ? BID_TIMEOUT_MS : PLAY_TIMEOUT_MS;
+  const turnProgress =
+    remainingMs !== null &&
+    (state.phase === 'BIDDING' || state.phase === 'PLAYING')
+      ? Math.max(0, Math.min(1, remainingMs / totalTurnMs))
+      : null;
+  const isTimerUrgent = remainingSeconds !== null && remainingSeconds <= 5;
 
   const isSeatSpeaking = (seatClientId: string | null): boolean => {
     if (!seatClientId) return false;
@@ -276,7 +363,7 @@ export function GameTable({
 
   const submitCall = (value: number) => {
     unlockAudio();
-    if (mySeatIndex === null) return;
+    if (mySeatIndex === null || !canPlaceCall) return;
     const clamped = Math.max(MIN_CALL, Math.min(MAX_CALL, value));
     onDispatchAction({
       type: 'PLACE_CALL',
@@ -287,7 +374,7 @@ export function GameTable({
 
   const handlePlayCard = (card: CardValue) => {
     unlockAudio();
-    if (mySeatIndex === null || !isMyTurn || state.phase !== 'PLAYING') return;
+    if (mySeatIndex === null || !isMyPlayTurn || state.phase !== 'PLAYING') return;
     onDispatchAction({
       type: 'PLAY_CARD',
       seatIndex: mySeatIndex,
@@ -306,6 +393,15 @@ export function GameTable({
       state.phase === 'TRICK_COMPLETE' &&
       state.lastTrickWinnerSeat === seat.seatIndex;
 
+    const flightClass =
+      pos === 'top'
+        ? 'animate-play-from-top'
+        : pos === 'left'
+          ? 'animate-play-from-left'
+          : pos === 'right'
+            ? 'animate-play-from-right'
+            : 'animate-play-from-bottom';
+
     return (
       <div
         data-testid={
@@ -314,25 +410,27 @@ export function GameTable({
         aria-label={`${slotName} slot`}
         className={
           compact
-            ? 'flex h-[44px] w-[62px] items-center justify-center sm:h-[48px] sm:w-[70px]'
-            : 'flex h-[82px] w-[130px] items-center justify-center lg:h-[88px] lg:w-[142px]'
+            ? 'flex h-[68px] w-[50px] items-center justify-center sm:h-[76px] sm:w-[56px]'
+            : 'flex h-[106px] w-[76px] items-center justify-center lg:h-[116px] lg:w-[84px]'
         }
       >
         {playedCard !== undefined && (
-          <div className="animate-center-card-pop">
-            <PlayingCard
-              value={playedCard}
-              orientation="landscape"
-              size={compact ? 'sm' : 'md'}
-              className={
-                compact
-                  ? '!h-[42px] !w-[60px] !text-[22px] sm:!h-[46px] sm:!w-[68px] sm:!text-[24px]'
-                  : ''
-              }
-              useCustomScan={scanSet.has(playedCard)}
-              highlighted={isWinner}
-              ariaLabel={`${seat.username} played ${playedCard}`}
-            />
+          <div className={flightClass}>
+            <div className={isWinner ? 'animate-trick-win-glow' : ''}>
+              <PlayingCard
+                value={playedCard}
+                orientation="portrait"
+                size={compact ? 'sm' : 'md'}
+                className={
+                  compact
+                    ? '!h-[64px] !w-[46px] !text-[24px] sm:!h-[72px] sm:!w-[52px] sm:!text-[26px]'
+                    : '!h-[102px] !w-[74px] !text-[36px] lg:!h-[112px] lg:!w-[80px] lg:!text-[40px]'
+                }
+                useCustomScan={scanSet.has(playedCard)}
+                highlighted={isWinner}
+                ariaLabel={`${seat.username} played ${playedCard}`}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -343,54 +441,58 @@ export function GameTable({
     <div
       aria-label={`Active turn: ${activeSeatObj.username}`}
       data-testid={compact ? undefined : 'turn-compass'}
-      className={`relative flex items-center justify-center rounded-full border border-amber-300/45 bg-black/20 ${
-        compact ? 'h-9 w-9 sm:h-10 sm:w-10' : 'h-16 w-16'
+      className={`relative flex items-center justify-center rounded-full border border-amber-300/45 bg-black/25 ${
+        compact ? 'h-9 w-9 sm:h-10 sm:w-10' : 'h-14 w-14 lg:h-16 lg:w-16'
       }`}
     >
       <ArrowUp
-        className={`absolute top-0.5 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
+        className={`absolute top-0.5 transition-all duration-200 ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'top'
             ? 'scale-110 text-amber-300'
             : 'text-amber-100/20'
         }`}
       />
       <ArrowLeft
-        className={`absolute left-0.5 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
+        className={`absolute left-0.5 transition-all duration-200 ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'left'
             ? 'scale-110 text-amber-300'
             : 'text-amber-100/20'
         }`}
       />
       <ArrowRight
-        className={`absolute right-0.5 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
+        className={`absolute right-0.5 transition-all duration-200 ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'right'
             ? 'scale-110 text-amber-300'
             : 'text-amber-100/20'
         }`}
       />
       <ArrowDown
-        className={`absolute bottom-0.5 transition-all ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
+        className={`absolute bottom-0.5 transition-all duration-200 ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'bottom-left'
             ? 'scale-110 text-amber-300'
             : 'text-amber-100/20'
         }`}
       />
-      <span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" />
+      <span className="h-1.5 w-1.5 rounded-full bg-amber-300/85" />
     </div>
   );
 
   const biddingCard = (
     <div
       data-testid="bidding-tray"
-      className="glass-pill w-full max-w-[360px] rounded-2xl border-amber-300/35 p-4 text-center shadow-2xl"
+      className="glass-pill animate-panel-enter w-full max-w-[360px] rounded-2xl border-amber-300/35 p-4 text-center shadow-2xl"
     >
-      <div className="text-xs font-bold tracking-wide text-amber-200 sm:text-sm">
-        {isMyTurn
-          ? 'Declare Your Call (50 – 500)'
-          : `Waiting for ${activeSeatObj.username} to call…`}
+      <div className="flex items-center justify-between gap-2 text-xs font-bold tracking-wide text-amber-200 sm:text-sm">
+        <span className="mx-auto">
+          {canPlaceCall
+            ? 'Declare Your Call (50 – 500)'
+            : mySeat.call !== null
+              ? `Call Locked: ${mySeat.call}`
+              : 'Simultaneous Call'}
+        </span>
       </div>
 
-      {isMyTurn && (
+      {canPlaceCall ? (
         <div className="mt-3 space-y-3">
           <div className="grid grid-cols-4 gap-1.5">
             {QUICK_CALL_VALUES.map((val) => (
@@ -399,7 +501,7 @@ export function GameTable({
                 type="button"
                 onClick={() => submitCall(val)}
                 data-testid={`quick-call-${val}`}
-                className={`rounded-xl border py-1.5 text-xs font-bold transition sm:text-sm ${
+                className={`rounded-xl border py-1.5 text-xs font-bold transition active:scale-95 sm:text-sm ${
                   selectedCall === val
                     ? 'border-amber-300 bg-amber-400 text-[#1b1108]'
                     : 'border-white/15 bg-white/10 text-[#faf3e6] hover:bg-amber-400 hover:text-[#1b1108]'
@@ -428,12 +530,12 @@ export function GameTable({
                   setSelectedCall((c) => Math.max(MIN_CALL, c - CALL_STEP))
                 }
                 aria-label="Decrease call by 10"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-amber-200 hover:bg-white/20"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-amber-200 transition hover:bg-white/20 active:scale-95"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
 
-              <span className="text-lg font-extrabold text-white">
+              <span className="text-lg font-extrabold tabular-nums text-white">
                 {selectedCall}
               </span>
 
@@ -443,7 +545,7 @@ export function GameTable({
                   setSelectedCall((c) => Math.min(MAX_CALL, c + CALL_STEP))
                 }
                 aria-label="Increase call by 10"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-amber-200 hover:bg-white/20"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-amber-200 transition hover:bg-white/20 active:scale-95"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -452,13 +554,21 @@ export function GameTable({
                 type="button"
                 onClick={() => submitCall(selectedCall)}
                 data-testid="submit-custom-call"
-                className="ml-1 flex-1 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-extrabold text-[#1b1108] hover:bg-amber-300 sm:text-sm"
+                className="ml-1 flex-1 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-extrabold text-[#1b1108] transition hover:bg-amber-300 active:scale-95 sm:text-sm"
               >
                 Confirm
               </button>
             </div>
           </div>
+
+          <p className="text-[11px] font-medium text-[#d8c7ae]">
+            All players call simultaneously ({calledCount}/4 locked)
+          </p>
         </div>
+      ) : (
+        <p className="mt-2 text-xs font-medium text-[#d8c7ae]">
+          Waiting for other players to lock their call ({calledCount}/4)…
+        </p>
       )}
     </div>
   );
@@ -502,16 +612,8 @@ export function GameTable({
 
           {remainingSeconds !== null &&
             (state.phase === 'BIDDING' || state.phase === 'PLAYING') && (
-              <span
-                data-testid="shot-clock"
-                className={`glass-pill inline-flex items-center gap-0.5 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold sm:gap-1 sm:px-2 sm:py-1 sm:text-[11px] md:px-2.5 md:py-1.5 md:text-xs ${
-                  remainingSeconds <= 5
-                    ? '!border-red-400/70 text-red-200'
-                    : 'text-amber-200'
-                }`}
-              >
-                <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" aria-hidden="true" />
-                <span>{remainingSeconds}s</span>
+              <span data-testid="shot-clock" className="sr-only">
+                {remainingSeconds}s
               </span>
             )}
         </div>
@@ -560,8 +662,13 @@ export function GameTable({
            DESKTOP TABLETOP (>= 768px)
            ================================================================ */
         <div className="relative flex-1 px-6 pb-4">
-          {/* Clean Handwoven Inner Pati Mat */}
+          {/* Warm Woven Terracotta & Mustard Bangladeshi Pati Mat */}
           <div className="pati-inner-mat pointer-events-none absolute inset-x-16 inset-y-4 rounded-3xl" />
+
+          {/* Handcrafted Pure-SVG Hurricane Lantern (Kupibati) in Top-Right Corner */}
+          <div className="pointer-events-none absolute right-20 top-5 z-10 hidden lg:block">
+            <KupibatiLantern paused={lowDataMode} />
+          </div>
 
           {/* Top Center Seat */}
           <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2">
@@ -570,11 +677,14 @@ export function GameTable({
               position="top"
               isMe={mySeatIndex === seatByPos.top.seatIndex}
               isHost={hostSeatIndex === seatByPos.top.seatIndex}
-              isActiveTurn={
-                (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                state.activeSeat === seatByPos.top.seatIndex
-              }
+              isActiveTurn={isSeatActiveTurn(seatByPos.top)}
               isSpeaking={isSeatSpeaking(seatByPos.top.clientId)}
+              turnProgress={turnProgress}
+              isTimerUrgent={isTimerUrgent}
+              maskCall={
+                state.phase === 'BIDDING' &&
+                mySeatIndex !== seatByPos.top.seatIndex
+              }
             />
           </div>
 
@@ -585,11 +695,14 @@ export function GameTable({
               position="left"
               isMe={mySeatIndex === seatByPos.left.seatIndex}
               isHost={hostSeatIndex === seatByPos.left.seatIndex}
-              isActiveTurn={
-                (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                state.activeSeat === seatByPos.left.seatIndex
-              }
+              isActiveTurn={isSeatActiveTurn(seatByPos.left)}
               isSpeaking={isSeatSpeaking(seatByPos.left.clientId)}
+              turnProgress={turnProgress}
+              isTimerUrgent={isTimerUrgent}
+              maskCall={
+                state.phase === 'BIDDING' &&
+                mySeatIndex !== seatByPos.left.seatIndex
+              }
             />
           </div>
 
@@ -600,11 +713,14 @@ export function GameTable({
               position="right"
               isMe={mySeatIndex === seatByPos.right.seatIndex}
               isHost={hostSeatIndex === seatByPos.right.seatIndex}
-              isActiveTurn={
-                (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                state.activeSeat === seatByPos.right.seatIndex
-              }
+              isActiveTurn={isSeatActiveTurn(seatByPos.right)}
               isSpeaking={isSeatSpeaking(seatByPos.right.clientId)}
+              turnProgress={turnProgress}
+              isTimerUrgent={isTimerUrgent}
+              maskCall={
+                state.phase === 'BIDDING' &&
+                mySeatIndex !== seatByPos.right.seatIndex
+              }
             />
           </div>
 
@@ -615,11 +731,11 @@ export function GameTable({
               position="bottom-left"
               isMe={mySeatIndex === seatByPos['bottom-left'].seatIndex}
               isHost={hostSeatIndex === seatByPos['bottom-left'].seatIndex}
-              isActiveTurn={
-                (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                state.activeSeat === seatByPos['bottom-left'].seatIndex
-              }
+              isActiveTurn={isSeatActiveTurn(seatByPos['bottom-left'])}
               isSpeaking={isSeatSpeaking(seatByPos['bottom-left'].clientId)}
+              turnProgress={turnProgress}
+              isTimerUrgent={isTimerUrgent}
+              maskCall={false}
             />
           </div>
 
@@ -648,7 +764,7 @@ export function GameTable({
             {state.phase === 'BIDDING' ? (
               biddingCard
             ) : (
-              <div className="grid grid-cols-[auto_auto_auto] grid-rows-[auto_auto_auto] items-center justify-items-center gap-x-4 gap-y-3">
+              <div className="grid grid-cols-[auto_auto_auto] grid-rows-[auto_auto_auto] items-center justify-items-center gap-x-4 gap-y-2.5">
                 <div />
                 {renderPlaySlot('North', 'top')}
                 <div />
@@ -696,8 +812,8 @@ export function GameTable({
                       orientation="portrait"
                       size="hand"
                       useCustomScan={scanSet.has(card)}
-                      playable={state.phase === 'PLAYING' && isMyTurn}
-                      disabled={state.phase !== 'PLAYING' || !isMyTurn}
+                      playable={isMyPlayTurn}
+                      disabled={!isMyPlayTurn}
                       onClick={() => handlePlayCard(card)}
                     />
                   </div>
@@ -729,8 +845,6 @@ export function GameTable({
       ) : (
         /* ================================================================
            TRUE 4-EDGE MOBILE CARD TABLE LAYOUT (< 768px)
-           North at top, West on far-left, East on far-right, Center cross in middle,
-           Me + slim dock above large thumb-friendly hand!
            ================================================================ */
         <div className="relative z-10 flex flex-1 flex-col justify-between overflow-hidden px-2 pb-2">
           {/* NORTH SEAT (Top Center) */}
@@ -741,11 +855,14 @@ export function GameTable({
               position="top"
               isMe={mySeatIndex === seatByPos.top.seatIndex}
               isHost={hostSeatIndex === seatByPos.top.seatIndex}
-              isActiveTurn={
-                (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                state.activeSeat === seatByPos.top.seatIndex
-              }
+              isActiveTurn={isSeatActiveTurn(seatByPos.top)}
               isSpeaking={isSeatSpeaking(seatByPos.top.clientId)}
+              turnProgress={turnProgress}
+              isTimerUrgent={isTimerUrgent}
+              maskCall={
+                state.phase === 'BIDDING' &&
+                mySeatIndex !== seatByPos.top.seatIndex
+              }
             />
           </div>
 
@@ -759,15 +876,18 @@ export function GameTable({
                 position="left"
                 isMe={mySeatIndex === seatByPos.left.seatIndex}
                 isHost={hostSeatIndex === seatByPos.left.seatIndex}
-                isActiveTurn={
-                  (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                  state.activeSeat === seatByPos.left.seatIndex
-                }
+                isActiveTurn={isSeatActiveTurn(seatByPos.left)}
                 isSpeaking={isSeatSpeaking(seatByPos.left.clientId)}
+                turnProgress={turnProgress}
+                isTimerUrgent={isTimerUrgent}
+                maskCall={
+                  state.phase === 'BIDDING' &&
+                  mySeatIndex !== seatByPos.left.seatIndex
+                }
               />
             </div>
 
-            {/* CENTER 4-CARD CROSS */}
+            {/* CENTER 4-CARD PORTRAIT CROSS */}
             <section
               aria-label="Center Play Zone"
               data-testid="center-trick-arena"
@@ -796,11 +916,14 @@ export function GameTable({
                 position="right"
                 isMe={mySeatIndex === seatByPos.right.seatIndex}
                 isHost={hostSeatIndex === seatByPos.right.seatIndex}
-                isActiveTurn={
-                  (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                  state.activeSeat === seatByPos.right.seatIndex
-                }
+                isActiveTurn={isSeatActiveTurn(seatByPos.right)}
                 isSpeaking={isSeatSpeaking(seatByPos.right.clientId)}
+                turnProgress={turnProgress}
+                isTimerUrgent={isTimerUrgent}
+                maskCall={
+                  state.phase === 'BIDDING' &&
+                  mySeatIndex !== seatByPos.right.seatIndex
+                }
               />
             </div>
 
@@ -820,11 +943,11 @@ export function GameTable({
               position="bottom-left"
               isMe={mySeatIndex === seatByPos['bottom-left'].seatIndex}
               isHost={hostSeatIndex === seatByPos['bottom-left'].seatIndex}
-              isActiveTurn={
-                (state.phase === 'BIDDING' || state.phase === 'PLAYING') &&
-                state.activeSeat === seatByPos['bottom-left'].seatIndex
-              }
+              isActiveTurn={isSeatActiveTurn(seatByPos['bottom-left'])}
               isSpeaking={isSeatSpeaking(seatByPos['bottom-left'].clientId)}
+              turnProgress={turnProgress}
+              isTimerUrgent={isTimerUrgent}
+              maskCall={false}
             />
 
             <VoiceBar
@@ -866,16 +989,21 @@ export function GameTable({
                     zIndex: 10 + idx,
                   }}
                 >
-                  <PlayingCard
-                    value={card}
-                    orientation="portrait"
-                    size="sm"
-                    className="!h-[96px] !w-[66px] !text-[34px]"
-                    useCustomScan={scanSet.has(card)}
-                    playable={state.phase === 'PLAYING' && isMyTurn}
-                    disabled={state.phase !== 'PLAYING' || !isMyTurn}
-                    onClick={() => handlePlayCard(card)}
-                  />
+                  <div
+                    className="animate-deal-fan-in"
+                    style={{ animationDelay: `${idx * 40}ms` }}
+                  >
+                    <PlayingCard
+                      value={card}
+                      orientation="portrait"
+                      size="sm"
+                      className="!h-[96px] !w-[66px] !text-[34px]"
+                      useCustomScan={scanSet.has(card)}
+                      playable={isMyPlayTurn}
+                      disabled={!isMyPlayTurn}
+                      onClick={() => handlePlayCard(card)}
+                    />
+                  </div>
                 </div>
               );
             })}

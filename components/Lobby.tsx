@@ -40,6 +40,8 @@ export interface LobbyProps {
   joinCodeInput: string;
   onJoinCodeInputChange: (val: string) => void;
   activeRoomCode: string | null;
+  roomNotice?: string | null;
+  onDismissNotice?: () => void;
   state: GameState | null;
   clientId: string;
   mySeatIndex: SeatIndex | null;
@@ -54,7 +56,7 @@ export interface LobbyProps {
   chatMessages: ChatMessage[];
   onSendChat: (text: string, isBanter?: boolean) => void;
   onSpeakingMapChange: (speaking: SpeakingMap) => void;
-  onEnterRoom: (roomCode: string) => void;
+  onEnterRoom: (roomCode: string, mode?: 'create' | 'join') => void;
   onLeaveRoom: () => void;
   onDispatchAction: (action: GameAction) => void;
   availableCardScans?: number[];
@@ -66,6 +68,8 @@ export function Lobby({
   joinCodeInput,
   onJoinCodeInputChange,
   activeRoomCode,
+  roomNotice = null,
+  onDismissNotice,
   state,
   clientId,
   mySeatIndex,
@@ -128,9 +132,10 @@ export function Lobby({
   const handleCreateRoom = () => {
     unlockAudio();
     if (!ensureValidNickname()) return;
+    onDismissNotice?.();
     const code = generateRoomCode();
     onJoinCodeInputChange(code);
-    onEnterRoom(code);
+    onEnterRoom(code, 'create');
     void copyInviteLink(code);
   };
 
@@ -138,6 +143,7 @@ export function Lobby({
     e.preventDefault();
     unlockAudio();
     if (!ensureValidNickname()) return;
+    onDismissNotice?.();
     const normalized = normalizeRoomCode(joinCodeInput);
     if (!isValidRoomCode(normalized)) {
       setFormError(
@@ -147,8 +153,13 @@ export function Lobby({
     }
     setFormError(null);
     onJoinCodeInputChange(normalized);
-    onEnterRoom(normalized);
+    onEnterRoom(normalized, 'join');
   };
+
+  const isMeHost = mySeatIndex !== null && hostSeatIndex === mySeatIndex;
+  const hostSeatObj =
+    state && hostSeatIndex !== null ? state.seats[hostSeatIndex] : null;
+  const hostDisplayName = hostSeatObj?.username || 'Host';
 
   const allSeatsFilled = state
     ? state.seats.every((seat) => seat.type !== 'EMPTY')
@@ -207,9 +218,51 @@ export function Lobby({
           })}
         </div>
 
-        {/* ENTRY LOBBY */}
-        {!activeRoomCode || !state ? (
+        {/* JOINING EXISTING ROOM VIA INVITE / JOIN */}
+        {activeRoomCode && !state ? (
+          <div
+            data-testid="joining-room-card"
+            className="animate-panel-enter flex w-full flex-col items-center gap-3 rounded-2xl border border-amber-300/25 bg-black/45 px-5 py-6 text-center"
+          >
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-amber-300/30 border-t-amber-300" />
+            <div>
+              <p className="text-sm font-bold text-[#faf3e6]">
+                Joining room <span className="text-amber-300">{activeRoomCode}</span>…
+              </p>
+              <p className="mt-0.5 text-xs text-[#cbb89d]">
+                Checking availability with the room host
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onLeaveRoom}
+              className="mt-1 rounded-xl border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-semibold text-[#f0dfc2] transition hover:bg-white/20"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : !activeRoomCode || !state ? (
           <div className="w-full space-y-4 text-left">
+            {roomNotice && (
+              <div
+                role="status"
+                data-testid="lobby-notice"
+                className="animate-panel-enter flex items-center justify-between gap-2 rounded-xl border border-amber-400/45 bg-amber-950/65 px-3.5 py-2.5 text-xs font-medium text-amber-100"
+              >
+                <span>{roomNotice}</span>
+                {onDismissNotice && (
+                  <button
+                    type="button"
+                    onClick={onDismissNotice}
+                    aria-label="Dismiss notice"
+                    className="shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-amber-300 hover:bg-white/10"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
+
             <div>
               <label
                 htmlFor="nickname-input"
@@ -237,7 +290,7 @@ export function Lobby({
                 type="button"
                 onClick={handleCreateRoom}
                 data-testid="create-room-btn"
-                className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-extrabold text-[#1b1108] transition hover:bg-amber-300"
+                className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-extrabold text-[#1b1108] transition hover:bg-amber-300 active:scale-[0.98]"
               >
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 <span>Create Room</span>
@@ -259,7 +312,7 @@ export function Lobby({
                 <button
                   type="submit"
                   data-testid="join-room-btn"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20 active:scale-[0.98]"
                 >
                   <LogIn className="h-4 w-4" aria-hidden="true" />
                   <span>Join</span>
@@ -279,7 +332,10 @@ export function Lobby({
           </div>
         ) : (
           /* ROOM LOBBY */
-          <div data-testid="room-lobby" className="w-full space-y-4 text-left">
+          <div
+            data-testid="room-lobby"
+            className="animate-panel-enter w-full space-y-4 text-left"
+          >
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/15 bg-black/40 px-4 py-3">
               <div>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[#cbb89d]">
@@ -354,7 +410,7 @@ export function Lobby({
                   <div
                     key={seat.seatIndex}
                     data-testid={`lobby-seat-${seat.seatIndex}`}
-                    className={`flex items-center justify-between rounded-2xl border px-3.5 py-2.5 ${
+                    className={`flex items-center justify-between rounded-2xl border px-3.5 py-2.5 transition ${
                       seat.type === 'EMPTY'
                         ? 'border-dashed border-white/20 bg-black/25'
                         : 'border-white/15 bg-black/45'
@@ -389,14 +445,18 @@ export function Lobby({
                             ? 'AI Bot'
                             : seat.type === 'HUMAN'
                               ? isMe
-                                ? 'You (Host)'
-                                : 'Human'
+                                ? isHostSeat
+                                  ? 'You (Host)'
+                                  : 'You'
+                                : isHostSeat
+                                  ? 'Host'
+                                  : 'Player'
                               : 'Open seat'}
                         </span>
                       </div>
                     </div>
 
-                    {seat.type === 'EMPTY' && (
+                    {isMeHost && seat.type === 'EMPTY' && (
                       <button
                         type="button"
                         onClick={() =>
@@ -406,14 +466,14 @@ export function Lobby({
                           })
                         }
                         data-testid={`add-bot-seat-${seat.seatIndex}`}
-                        className="inline-flex items-center gap-1 rounded-xl border border-amber-300/45 bg-amber-400/15 px-2.5 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-400 hover:text-[#1b1108]"
+                        className="inline-flex items-center gap-1 rounded-xl border border-amber-300/45 bg-amber-400/15 px-2.5 py-1.5 text-xs font-bold text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108]"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>Add Bot</span>
                       </button>
                     )}
 
-                    {seat.type === 'AI' && (
+                    {isMeHost && seat.type === 'AI' && (
                       <button
                         type="button"
                         onClick={() =>
@@ -424,7 +484,7 @@ export function Lobby({
                         }
                         data-testid={`remove-bot-seat-${seat.seatIndex}`}
                         aria-label={`Remove bot ${seat.username}`}
-                        className="inline-flex items-center gap-1 rounded-xl border border-red-400/35 bg-red-500/15 px-2.5 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/30"
+                        className="inline-flex items-center gap-1 rounded-xl border border-red-400/35 bg-red-500/15 px-2.5 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/30"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         <span>Remove</span>
@@ -435,40 +495,50 @@ export function Lobby({
               })}
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
-              {emptySeatCount > 0 && (
+            {isMeHost ? (
+              <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
+                {emptySeatCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      unlockAudio();
+                      onDispatchAction({ type: 'FILL_BOTS_AND_START' });
+                    }}
+                    data-testid="fill-bots-start-btn"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] transition hover:bg-amber-300 active:scale-[0.98]"
+                  >
+                    <Bot className="h-4 w-4" />
+                    <span>Fill Bots &amp; Start</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
+                  disabled={!allSeatsFilled}
                   onClick={() => {
                     unlockAudio();
-                    onDispatchAction({ type: 'FILL_BOTS_AND_START' });
+                    onDispatchAction({ type: 'START_MATCH' });
                   }}
-                  data-testid="fill-bots-start-btn"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] transition hover:bg-amber-300"
+                  data-testid="start-match-btn"
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ${
+                    allSeatsFilled
+                      ? 'bg-emerald-500 text-[#052e16] hover:bg-emerald-400 active:scale-[0.98]'
+                      : 'cursor-not-allowed border border-white/15 bg-white/5 text-stone-500'
+                  }`}
                 >
-                  <Bot className="h-4 w-4" />
-                  <span>Fill Bots &amp; Start</span>
+                  <Play className="h-4 w-4" />
+                  <span>Start Match</span>
                 </button>
-              )}
-
-              <button
-                type="button"
-                disabled={!allSeatsFilled}
-                onClick={() => {
-                  unlockAudio();
-                  onDispatchAction({ type: 'START_MATCH' });
-                }}
-                data-testid="start-match-btn"
-                className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ${
-                  allSeatsFilled
-                    ? 'bg-emerald-500 text-[#052e16] hover:bg-emerald-400'
-                    : 'cursor-not-allowed border border-white/15 bg-white/5 text-stone-500'
-                }`}
+              </div>
+            ) : (
+              <div
+                data-testid="waiting-for-host-banner"
+                className="flex items-center justify-center gap-2 rounded-xl border border-amber-300/20 bg-black/35 px-4 py-2.5 text-xs font-semibold text-[#e6d5b8]"
               >
-                <Play className="h-4 w-4" />
-                <span>Start Match</span>
-              </button>
-            </div>
+                <Crown className="h-3.5 w-3.5 text-amber-400" />
+                <span>Waiting for {hostDisplayName} to start the match…</span>
+              </div>
+            )}
 
             <div className="pt-1">
               <VoiceBar

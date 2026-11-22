@@ -43,6 +43,11 @@ export function HundredApp({
 }: HundredAppProps) {
   const normalizedInitial = initialRoom ? normalizeRoomCode(initialRoom) : '';
 
+  const hasInitialRoomParam = initialRoom.trim().length > 0;
+  const isInitialRoomValid = Boolean(
+    normalizedInitial && isValidRoomCode(normalizedInitial),
+  );
+
   const storedNickname = useSyncExternalStore(
     subscribeNicknameStorage,
     getStoredNicknameSnapshot,
@@ -51,8 +56,18 @@ export function HundredApp({
   const [nicknameDraft, setNicknameDraft] = useState<string | null>(null);
   const nickname = nicknameDraft ?? storedNickname;
 
-  const [joinCodeInput, setJoinCodeInput] = useState<string>(normalizedInitial);
-  const [activeRoomCode, setActiveRoomCode] = useState<string | null>(null);
+  const [joinCodeInput, setJoinCodeInput] = useState<string>(
+    isInitialRoomValid ? normalizedInitial : '',
+  );
+  const [activeRoomCode, setActiveRoomCode] = useState<string | null>(
+    isInitialRoomValid ? normalizedInitial : null,
+  );
+  const [joinOnlyMode, setJoinOnlyMode] = useState<boolean>(isInitialRoomValid);
+  const [roomNotice, setRoomNotice] = useState<string | null>(
+    hasInitialRoomParam && !isInitialRoomValid
+      ? 'Invalid invite link — check the room code.'
+      : null,
+  );
   const [lowDataMode, setLowDataMode] = useState<boolean>(false);
   const [rainEnabled, setRainEnabled] = useState<boolean>(true);
   const [speakingByClientId, setSpeakingByClientId] = useState<SpeakingMap>({});
@@ -84,9 +99,11 @@ export function HundredApp({
   }, []);
 
   const handleEnterRoom = useCallback(
-    (roomCode: string) => {
+    (roomCode: string, mode: 'create' | 'join' = 'create') => {
       const normalized = normalizeRoomCode(roomCode);
       if (!isValidRoomCode(normalized)) return;
+      setRoomNotice(null);
+      setJoinOnlyMode(mode === 'join');
       setActiveRoomCode(normalized);
       syncUrlRoomParam(normalized);
     },
@@ -102,6 +119,7 @@ export function HundredApp({
     chatMessages,
     remainingMs,
     connectionStatus,
+    roomUnavailableReason,
     dispatchAction,
     sendChat,
     leaveRoom,
@@ -109,14 +127,31 @@ export function HundredApp({
     roomCode: activeRoomCode ?? '',
     username: nickname.trim() || 'Player',
     enabled: Boolean(activeRoomCode),
+    joinOnly: joinOnlyMode,
   });
 
   const handleLeaveRoom = useCallback(() => {
     leaveRoom();
     setActiveRoomCode(null);
+    setJoinOnlyMode(false);
     setSpeakingByClientId({});
     syncUrlRoomParam(null);
   }, [leaveRoom, syncUrlRoomParam]);
+
+  // If an invite/join room wasn't found, is full, or already started, return cleanly to Lobby with notice
+  React.useEffect(() => {
+    if (!roomUnavailableReason) return;
+    const reason = roomUnavailableReason;
+    const t = window.setTimeout(() => {
+      leaveRoom();
+      setActiveRoomCode(null);
+      setJoinOnlyMode(false);
+      setSpeakingByClientId({});
+      syncUrlRoomParam(null);
+      setRoomNotice(reason);
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [roomUnavailableReason, leaveRoom, syncUrlRoomParam]);
 
   const handleToggleLowDataMode = useCallback(() => {
     setLowDataMode((prev) => !prev);
@@ -168,6 +203,8 @@ export function HundredApp({
       joinCodeInput={joinCodeInput}
       onJoinCodeInputChange={setJoinCodeInput}
       activeRoomCode={activeRoomCode}
+      roomNotice={roomNotice}
+      onDismissNotice={() => setRoomNotice(null)}
       state={state}
       clientId={clientId}
       mySeatIndex={mySeatIndex}

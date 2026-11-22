@@ -50,7 +50,7 @@ describe('SeatHub', () => {
     expect(avatar.getAttribute('data-speaking')).toBe('true');
     expect(avatar.className).toContain('ring-emerald-400');
     expect(screen.getByTestId('opponent-fan-top')).toBeTruthy();
-    expect(screen.getByTestId('captured-stack-1').textContent).toContain('0 Pts');
+    expect(screen.getByTestId('captured-stack-1').textContent?.trim()).toBe('0');
   });
 });
 
