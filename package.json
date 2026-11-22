@@ -1,0 +1,42 @@
+{
+  "name": "hundred",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@livekit/components-react": "^2.9.26",
+    "@supabase/supabase-js": "^2.119.2",
+    "livekit-client": "^2.25.0",
+    "livekit-server-sdk": "^2.20.1",
+    "lucide-react": "^1.77.0",
+    "next": "16.4.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwindcss": "4.3.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@tailwindcss/turbopack": "4.3.5",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.3.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.6",
+    "jsdom": "^31.0.1",
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^5.1.1"
+  }
+}
