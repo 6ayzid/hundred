@@ -414,7 +414,7 @@ export function GameTable({
           <div className="flex items-center gap-1.5 self-start pt-1 md:gap-2 md:pt-1.5">
             <span
               data-testid="arena-status-pill"
-              className="glass-pill rounded-full px-3 py-1 text-[11px] font-bold tracking-wide text-[#faf3e6] md:px-4 md:py-1.5 md:text-[15px]"
+              className="glass-pill whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide text-[#faf3e6] md:px-4 md:py-1.5 md:text-[15px]"
             >
               Round {state.round}/{TOTAL_ROUNDS}
             </span>
