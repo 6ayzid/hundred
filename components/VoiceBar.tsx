@@ -661,7 +661,7 @@ export function VoiceBar({
             data-testid="chat-drawer"
             role="region"
             aria-label="Bangla and Banglish Chat Drawer"
-            className="glass-pill animate-panel-enter mb-2.5 flex w-[295px] flex-col overflow-hidden rounded-2xl border-amber-300/25 text-[#faf3e6] shadow-2xl sm:w-[330px]"
+            className="animate-panel-enter mb-2.5 flex w-[295px] flex-col overflow-hidden rounded-2xl border border-amber-300/30 bg-[#160e0a]/96 text-[#faf3e6] shadow-[0_18px_40px_rgba(0,0,0,0.75)] backdrop-blur-md sm:w-[330px]"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-3 py-2">

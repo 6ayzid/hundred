@@ -8,17 +8,22 @@ import type { GameState } from '@/lib/types';
 
 export interface ScoreboardModalProps {
   state: GameState;
+  mySeatIndex?: number | null;
   onClose: () => void;
 }
 
-export function ScoreboardModal({ state, onClose }: ScoreboardModalProps) {
+export function ScoreboardModal({
+  state,
+  mySeatIndex = null,
+  onClose,
+}: ScoreboardModalProps) {
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Full Scoreboard"
       data-testid="scoreboard-modal"
-      className="fixed inset-0 z-50 flex flex-col bg-[#120c08]/98 text-[#faf3e6] backdrop-blur-md"
+      className="animate-panel-enter fixed inset-0 z-50 flex flex-col bg-[#120c08]/98 text-[#faf3e6] backdrop-blur-md"
     >
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/12 bg-[#1a110b] px-4 py-3.5 sm:px-8">
         <div className="flex items-center gap-3">
@@ -50,27 +55,33 @@ export function ScoreboardModal({ state, onClose }: ScoreboardModalProps) {
       <div className="flex-1 overflow-auto p-4 sm:p-8">
         <div className="mx-auto max-w-5xl space-y-5">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {state.seats.map((seat) => (
-              <div
-                key={seat.seatIndex}
-                className="glass-pill flex items-center gap-3 rounded-2xl p-3.5"
-              >
-                <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-white/25">
-                  <SeatAvatarGraphic seat={seat} size={44} />
+            {state.seats.map((seat) => {
+              const hideCall =
+                state.phase === 'BIDDING' && seat.seatIndex !== mySeatIndex;
+              const callDisplay =
+                seat.call === null ? '--' : hideCall ? '✓' : seat.call;
+              return (
+                <div
+                  key={seat.seatIndex}
+                  className="glass-pill flex items-center gap-3 rounded-2xl p-3.5"
+                >
+                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-white/25">
+                    <SeatAvatarGraphic seat={seat} size={44} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-white">
+                      {seat.username}
+                    </div>
+                    <div className="text-xl font-black text-amber-300">
+                      {seat.totalScore}
+                    </div>
+                    <div className="text-[11px] text-[#cbb89d]">
+                      Call: {callDisplay}
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-bold text-white">
-                    {seat.username}
-                  </div>
-                  <div className="text-xl font-black text-amber-300">
-                    {seat.totalScore}
-                  </div>
-                  <div className="text-[11px] text-[#cbb89d]">
-                    Call: {seat.call ?? '--'}
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-white/15 bg-[#17100a]">

@@ -1166,6 +1166,7 @@ export function GameTable({
       {scoreboardOpen && (
         <ScoreboardModal
           state={state}
+          mySeatIndex={mySeatIndex}
           onClose={() => setScoreboardOpen(false)}
         />
       )}
