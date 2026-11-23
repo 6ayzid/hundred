@@ -80,6 +80,21 @@
       );
   }
 
+  /* Rich responsive cool-toned tabletop photo background (desktop & mobile) */
+  .bg-tabletop-photo {
+    background-color: #0e1318;
+    background-image:
+      radial-gradient(
+        ellipse at 50% 45%,
+        rgba(10, 15, 22, 0.16) 0%,
+        rgba(6, 9, 14, 0.58) 100%
+      ),
+      url('/assets/tabletop-bg-desktop.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
   /* Woven Bangladeshi pati (chatai) mat pattern in warm red, ochre, and indigo */
   .bg-pati-mat,
   .pati-weave {
@@ -471,15 +486,15 @@
   animation: play-from-right 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Winning trick cards visibly gather & glide smoothly into the winner's card stack */
+/* Winning trick cards visibly gather & glide one-by-one into the winner's card stack */
 @keyframes sweep-to-top {
   0% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
-  30% {
+  86% {
     opacity: 1;
-    transform: translate3d(18px, -24px, 0) scale(0.92) rotate(4deg);
+    transform: translate3d(70px, -218px, 0) scale(0.5) rotate(10deg);
   }
   100% {
     opacity: 0;
@@ -492,9 +507,9 @@
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
-  30% {
+  86% {
     opacity: 1;
-    transform: translate3d(-44px, -10px, 0) scale(0.92) rotate(-5deg);
+    transform: translate3d(-325px, -26px, 0) scale(0.5) rotate(-12deg);
   }
   100% {
     opacity: 0;
@@ -507,9 +522,9 @@
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
-  30% {
+  86% {
     opacity: 1;
-    transform: translate3d(44px, 8px, 0) scale(0.92) rotate(5deg);
+    transform: translate3d(325px, 24px, 0) scale(0.5) rotate(12deg);
   }
   100% {
     opacity: 0;
@@ -522,9 +537,9 @@
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
-  30% {
+  86% {
     opacity: 1;
-    transform: translate3d(-42px, 34px, 0) scale(0.92) rotate(-6deg);
+    transform: translate3d(-305px, 222px, 0) scale(0.5) rotate(-12deg);
   }
   100% {
     opacity: 0;

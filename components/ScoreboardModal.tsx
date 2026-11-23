@@ -55,33 +55,55 @@ export function ScoreboardModal({
       <div className="flex-1 overflow-auto p-4 sm:p-8">
         <div className="mx-auto max-w-5xl space-y-5">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {state.seats.map((seat) => {
-              const hideCall =
-                state.phase === 'BIDDING' && seat.seatIndex !== mySeatIndex;
-              const callDisplay =
-                seat.call === null ? '--' : hideCall ? '✓' : seat.call;
-              return (
-                <div
-                  key={seat.seatIndex}
-                  className="glass-pill flex items-center gap-3 rounded-2xl p-3.5"
-                >
-                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-white/25">
-                    <SeatAvatarGraphic seat={seat} size={44} />
+            {[...state.seats]
+              .sort((a, b) => b.totalScore - a.totalScore || a.seatIndex - b.seatIndex)
+              .map((seat, rankIdx, sorted) => {
+                const rank =
+                  rankIdx > 0 && seat.totalScore === sorted[rankIdx - 1].totalScore
+                    ? sorted.findIndex((s) => s.totalScore === seat.totalScore) + 1
+                    : rankIdx + 1;
+                const rankStyle =
+                  rank === 1
+                    ? 'bg-amber-400 text-[#1b1108] ring-amber-300/60'
+                    : rank === 2
+                      ? 'bg-slate-200 text-slate-900 ring-white/40'
+                      : rank === 3
+                        ? 'bg-amber-700 text-amber-50 ring-amber-500/40'
+                        : 'bg-white/10 text-[#cbb89d] ring-white/15';
+                const hideCall =
+                  state.phase === 'BIDDING' && seat.seatIndex !== mySeatIndex;
+                const callDisplay =
+                  seat.call === null ? '--' : hideCall ? '✓' : seat.call;
+                return (
+                  <div
+                    key={seat.seatIndex}
+                    data-testid={`scoreboard-rank-${rank}`}
+                    className={`glass-pill relative flex items-center gap-3 rounded-2xl p-3.5 ${
+                      rank === 1 ? 'ring-1 ring-amber-400/50' : ''
+                    }`}
+                  >
+                    <span
+                      className={`absolute right-2.5 top-2.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ring-1 ${rankStyle}`}
+                    >
+                      #{rank}
+                    </span>
+                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-white/25">
+                      <SeatAvatarGraphic seat={seat} size={44} />
+                    </div>
+                    <div className="min-w-0 pr-5">
+                      <div className="truncate text-sm font-bold text-white">
+                        {seat.username}
+                      </div>
+                      <div className="text-xl font-black text-amber-300">
+                        {seat.totalScore}
+                      </div>
+                      <div className="text-[11px] text-[#cbb89d]">
+                        Call: {callDisplay}
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-bold text-white">
-                      {seat.username}
-                    </div>
-                    <div className="text-xl font-black text-amber-300">
-                      {seat.totalScore}
-                    </div>
-                    <div className="text-[11px] text-[#cbb89d]">
-                      Call: {callDisplay}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-white/15 bg-[#17100a]">

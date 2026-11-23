@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Crown, Mic, MicOff, WifiOff } from 'lucide-react';
+import { Crown, Mic, MicOff, Target, Trophy, WifiOff } from 'lucide-react';
 import { PlayingCard } from '@/components/PlayingCard';
 import type { SeatState } from '@/lib/types';
 
@@ -570,11 +570,23 @@ function SeatHubInner({
               />
             </div>
 
-            <div className="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-[9.5px] font-medium text-[#d8c7ae] sm:gap-2 sm:text-[10px]">
-              <span className={callMade ? 'font-bold text-emerald-300' : ''}>
-                Call: {callLabel}
+            <div className="mt-0.5 flex items-center gap-2 whitespace-nowrap text-[9.5px] font-semibold text-[#d8c7ae] sm:text-[10px]">
+              <span
+                title="Call"
+                aria-label={`Call ${callLabel}`}
+                className={`inline-flex items-center gap-0.5 ${callMade ? 'font-bold text-emerald-300' : ''}`}
+              >
+                <Target className="h-2.5 w-2.5 shrink-0 text-emerald-300" aria-hidden="true" />
+                {callLabel}
               </span>
-              <span>Score: {seat.totalScore}</span>
+              <span
+                title="Score"
+                aria-label={`Score ${seat.totalScore}`}
+                className="inline-flex items-center gap-0.5"
+              >
+                <Trophy className="h-2.5 w-2.5 shrink-0 text-amber-300" aria-hidden="true" />
+                {seat.totalScore}
+              </span>
             </div>
           </div>
         </div>
@@ -617,11 +629,23 @@ function SeatHubInner({
           mini
         />
 
-        <div className="flex flex-col text-[8.5px] leading-tight text-[#d8c7ae] sm:text-[9px]">
-          <span className={callMade ? 'font-bold text-emerald-300' : ''}>
-            Call: {callLabel}
+        <div className="flex flex-col gap-0.5 text-[8.5px] font-semibold leading-tight text-[#d8c7ae] sm:text-[9px]">
+          <span
+            title="Call"
+            aria-label={`Call ${callLabel}`}
+            className={`inline-flex items-center justify-center gap-0.5 ${callMade ? 'font-bold text-emerald-300' : ''}`}
+          >
+            <Target className="h-2.5 w-2.5 shrink-0 text-emerald-300" aria-hidden="true" />
+            {callLabel}
           </span>
-          <span>Score: {seat.totalScore}</span>
+          <span
+            title="Score"
+            aria-label={`Score ${seat.totalScore}`}
+            className="inline-flex items-center justify-center gap-0.5"
+          >
+            <Trophy className="h-2.5 w-2.5 shrink-0 text-amber-300" aria-hidden="true" />
+            {seat.totalScore}
+          </span>
         </div>
 
         <CapturedStack
@@ -701,16 +725,24 @@ function SeatHubInner({
 
       <div className="mt-1 flex items-center justify-center gap-1.5">
         <span
-          className={`glass-pill whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+          title="Call"
+          aria-label={`Call ${callLabel}`}
+          className={`glass-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
             callMade
               ? '!border-emerald-400/55 text-emerald-200'
               : 'text-[#f3e6cf]'
           }`}
         >
-          Call: {callLabel}
+          <Target className="h-3 w-3 shrink-0 text-emerald-300" aria-hidden="true" />
+          <span>{callLabel}</span>
         </span>
-        <span className="glass-pill whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-[#f3e6cf]">
-          Score: {seat.totalScore}
+        <span
+          title="Score"
+          aria-label={`Score ${seat.totalScore}`}
+          className="glass-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-[#f3e6cf]"
+        >
+          <Trophy className="h-3 w-3 shrink-0 text-amber-300" aria-hidden="true" />
+          <span>{seat.totalScore}</span>
         </span>
       </div>
     </div>

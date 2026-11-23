@@ -556,7 +556,18 @@ export function GameTable({
         }
       >
         {playedCard !== undefined && (
-          <div className={sweepClass || flightClass}>
+          <div
+            className={sweepClass || flightClass}
+            style={
+              isSweeping
+                ? {
+                    animationDelay: `${
+                      (isWinner ? 3 : seat.seatIndex % 3) * 125
+                    }ms`,
+                  }
+                : undefined
+            }
+          >
             <div className={isWinner && !isSweeping ? 'animate-trick-win-glow' : ''}>
               <PlayingCard
                 value={playedCard}
@@ -766,7 +777,7 @@ export function GameTable({
       data-rain-paused={lowDataMode ? 'true' : 'false'}
       data-phase={state.phase}
       onPointerDown={() => unlockAudio()}
-      className="pati-table-surface fixed inset-0 flex h-dvh w-full flex-col overflow-hidden select-none"
+      className="bg-tabletop-photo fixed inset-0 flex h-dvh w-full flex-col overflow-hidden select-none"
     >
       {/* Subtle rain streaks along edges */}
       <div
