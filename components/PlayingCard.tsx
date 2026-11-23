@@ -41,7 +41,7 @@ const LANDSCAPE_SIZE_CLASSES: Record<
   hand: 'h-[86px] w-[136px] rounded-[9px] text-[52px]',
 };
 
-export function PlayingCard({
+function PlayingCardInner({
   value,
   faceDown = false,
   orientation = 'portrait',
@@ -76,14 +76,14 @@ export function PlayingCard({
 
   const interactiveClasses = onClick
     ? playable && !disabled
-      ? 'cursor-pointer transition-all duration-200 ease-out hover:-translate-y-7 hover:scale-[1.04] hover:shadow-[0_22px_36px_rgba(0,0,0,0.65)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 active:-translate-y-2'
+      ? 'cursor-pointer transition-transform duration-200 ease-out hover:-translate-y-7 hover:scale-[1.05] hover:shadow-[0_22px_36px_rgba(0,0,0,0.65)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 active:-translate-y-2 active:scale-[0.98]'
       : 'cursor-default opacity-95'
     : '';
 
   const stateClasses = [
     selected ? '-translate-y-6 ring-2 ring-amber-300 shadow-2xl' : '',
     highlighted
-      ? 'ring-[3px] ring-emerald-400 shadow-[0_0_28px_rgba(52,211,153,0.8)]'
+      ? 'ring-[3px] ring-amber-300 shadow-[0_0_26px_rgba(251,191,36,0.75)]'
       : '',
   ]
     .filter(Boolean)
@@ -139,5 +139,7 @@ export function PlayingCard({
     </div>
   );
 }
+
+export const PlayingCard = React.memo(PlayingCardInner);
 
 export default PlayingCard;

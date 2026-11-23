@@ -21,6 +21,12 @@ export interface SeatHubProps {
   isTimerUrgent?: boolean;
   /** During simultaneous bidding, hide opponents' exact call amount until all 4 players confirm. */
   maskCall?: boolean;
+  /** Optional override for displayed captured points (delayed slightly until sweeping cards land in the stack). */
+  displayedCapturedPoints?: number;
+  /** Optional override for displayed tricks won count. */
+  displayedTricksWon?: number;
+  /** Optional override for visible opponent cards during round-start deal animation. */
+  visibleHandCount?: number;
 }
 
 /**
@@ -311,31 +317,68 @@ function AvatarTimerRing({
 }
 
 /**
- * Dark navy-blue stacked visiting-card deck matching the card backs,
- * displaying ONLY the accumulated round points in crisp high-contrast numerals.
+ * Placeholder-first captured card stack:
+ * - Starts with NO stack — only a subtle dashed empty card placeholder on the mat.
+ * - Once tricks are won, grows into a dark navy-blue stacked visiting-card deck
+ *   showing ONLY the accumulated points in crisp high-contrast numerals.
  */
 function CapturedStack({
   seatIndex,
   capturedPoints,
+  tricksWon,
   mini = false,
   className = '',
 }: {
   seatIndex: number;
   capturedPoints: number;
+  tricksWon: number;
   mini?: boolean;
   className?: string;
 }) {
+  const isEmpty = capturedPoints === 0 && tricksWon === 0;
+  const depthClass =
+    tricksWon >= 3
+      ? 'captured-deck-3d-tall'
+      : tricksWon === 2
+        ? 'captured-deck-3d-mid'
+        : '';
+
   if (mini) {
+    if (isEmpty) {
+      return (
+        <div
+          data-testid={`captured-stack-${seatIndex}`}
+          data-empty="true"
+          aria-label="Captured points: 0"
+          className={`inline-flex h-[22px] w-[17px] items-center justify-center rounded-[4px] border border-dashed border-[#f2dec0]/35 bg-black/15 ${className}`}
+        />
+      );
+    }
+
     return (
       <div
         key={capturedPoints}
         data-testid={`captured-stack-${seatIndex}`}
+        data-empty="false"
         aria-label={`Captured points: ${capturedPoints}`}
-        className={`relative inline-flex h-[22px] min-w-[30px] items-center justify-center rounded-[5px] border border-[#efe7d8]/80 bg-gradient-to-b from-[#284277] to-[#16274b] px-1.5 text-[11px] font-black tabular-nums leading-none text-white shadow-[0_2px_0_#e5dcc8,0_4px_7px_rgba(0,0,0,0.45)] ${
-          capturedPoints > 0 ? 'animate-points-pop' : ''
-        } ${className}`}
+        className={`animate-points-pop relative inline-flex h-[22px] min-w-[26px] items-center justify-center rounded-[5px] border border-[#efe7d8]/85 bg-gradient-to-b from-[#284277] to-[#16274b] px-1.5 text-[11px] font-black tabular-nums leading-none text-white shadow-[0_2px_0_#e5dcc8,0_4px_7px_rgba(0,0,0,0.45)] ${className}`}
       >
         {capturedPoints}
+      </div>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <div
+        data-testid={`captured-stack-${seatIndex}`}
+        data-empty="true"
+        aria-label="Captured points: 0"
+        className={`relative flex items-center justify-center ${className}`}
+      >
+        <div className="flex h-[62px] w-[46px] items-center justify-center rounded-[6px] border-[1.5px] border-dashed border-[#f2dec0]/30 bg-black/15 transition-all duration-300 lg:h-[70px] lg:w-[52px]">
+          <div className="h-[74%] w-[70%] rounded-[3px] border border-[#f2dec0]/12" />
+        </div>
       </div>
     );
   }
@@ -343,15 +386,14 @@ function CapturedStack({
   return (
     <div
       data-testid={`captured-stack-${seatIndex}`}
+      data-empty="false"
       aria-label={`Captured points: ${capturedPoints}`}
       className={`relative flex items-center justify-center ${className}`}
     >
-      {/* Portrait dark-navy stacked visiting-card deck */}
+      {/* Portrait dark-navy stacked visiting-card deck growing thicker with tricks won */}
       <div
         key={capturedPoints}
-        className={`captured-deck-3d relative flex h-[62px] w-[46px] items-center justify-center rounded-[6px] lg:h-[70px] lg:w-[52px] ${
-          capturedPoints > 0 ? 'animate-points-pop' : ''
-        }`}
+        className={`captured-deck-3d animate-points-pop relative flex h-[62px] w-[46px] items-center justify-center rounded-[6px] lg:h-[70px] lg:w-[52px] ${depthClass}`}
       >
         {/* Inner navy card filigree frame */}
         <div className="pointer-events-none absolute inset-[3.5px] rounded-[3.5px] border border-[#f5ecd9]/35" />
@@ -364,18 +406,51 @@ function CapturedStack({
   );
 }
 
+/**
+ * Purely visual fanned dark-navy cards representing an opponent's remaining hand.
+ * Zero numbers, zero text — physically shrinks as cards are played.
+ */
 function OpponentNavyFan({
   position,
   remainingCards,
+  mini = false,
 }: {
   position: HubPosition;
   remainingCards: number;
+  mini?: boolean;
 }) {
   if (remainingCards <= 0) return null;
+
+  if (mini) {
+    return (
+      <div
+        data-testid={`opponent-fan-${position}`}
+        aria-label={`${remainingCards} cards remaining`}
+        className="flex items-end justify-center py-0.5"
+      >
+        {Array.from({ length: remainingCards }).map((_, idx) => {
+          const center = (remainingCards - 1) / 2;
+          const deg = (idx - center) * 9;
+          const yLift = Math.abs(idx - center) * 1.2;
+          return (
+            <div
+              key={idx}
+              style={{
+                transform: `rotate(${deg}deg) translateY(${yLift}px)`,
+                marginLeft: idx === 0 ? 0 : -7,
+              }}
+              className="navy-card-back h-[20px] w-[14px] rounded-[2.5px] transition-transform duration-300"
+            />
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div
       data-testid={`opponent-fan-${position}`}
+      aria-label={`${remainingCards} cards remaining`}
       className="relative flex items-center justify-center"
     >
       <div className="flex items-end">
@@ -390,6 +465,7 @@ function OpponentNavyFan({
                 transform: `rotate(${deg}deg) translateY(${yLift}px)`,
                 marginLeft: idx === 0 ? 0 : -22,
               }}
+              className="transition-transform duration-300 ease-out"
             >
               <PlayingCard
                 faceDown
@@ -400,15 +476,11 @@ function OpponentNavyFan({
           );
         })}
       </div>
-
-      <span className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#faf7f0] text-xs font-extrabold text-[#162033] shadow ring-1 ring-black/15">
-        {remainingCards}
-      </span>
     </div>
   );
 }
 
-export function SeatHub({
+function SeatHubInner({
   seat,
   position,
   isMe,
@@ -419,12 +491,22 @@ export function SeatHub({
   turnProgress = null,
   isTimerUrgent = false,
   maskCall = false,
+  displayedCapturedPoints,
+  displayedTricksWon,
+  visibleHandCount,
 }: SeatHubProps) {
   const displayName = seat.username || `Seat ${seat.seatIndex + 1}`;
-  const remainingCards = seat.hand.length;
+  const remainingCards =
+    visibleHandCount !== undefined
+      ? Math.min(seat.hand.length, visibleHandCount)
+      : seat.hand.length;
+  const shownPoints = displayedCapturedPoints ?? seat.capturedPoints;
+  const shownTricks = displayedTricksWon ?? seat.tricksWon;
 
   const callLabel =
     seat.call === null ? '--' : maskCall ? '✓' : String(seat.call);
+  const callMade =
+    !maskCall && seat.call !== null && shownPoints >= seat.call;
 
   const idleRingClasses = isSpeaking
     ? 'ring-2 ring-emerald-400'
@@ -473,23 +555,25 @@ export function SeatHub({
                 {displayName}
                 {isMe ? ' (Me)' : ''}
               </span>
-              {position === 'top' && remainingCards > 0 && (
-                <span
-                  data-testid="opponent-fan-top"
-                  className="inline-flex h-4 min-w-[18px] items-center justify-center rounded bg-[#223969] px-1 text-[10px] font-bold text-[#faf7f0] ring-1 ring-[#efe7d8]/50"
-                >
-                  {remainingCards}
-                </span>
+              {position === 'top' && (
+                <OpponentNavyFan
+                  position="top"
+                  remainingCards={remainingCards}
+                  mini
+                />
               )}
               <CapturedStack
                 seatIndex={seat.seatIndex}
-                capturedPoints={seat.capturedPoints}
+                capturedPoints={shownPoints}
+                tricksWon={shownTricks}
                 mini
               />
             </div>
 
             <div className="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-[9.5px] font-medium text-[#d8c7ae] sm:gap-2 sm:text-[10px]">
-              <span>Call: {callLabel}</span>
+              <span className={callMade ? 'font-bold text-emerald-300' : ''}>
+                Call: {callLabel}
+              </span>
               <span>Score: {seat.totalScore}</span>
             </div>
           </div>
@@ -520,28 +604,30 @@ export function SeatHub({
             turnProgress={turnProgress}
             isUrgent={isTimerUrgent}
           />
-          {remainingCards > 0 && (
-            <span
-              data-testid={`opponent-fan-${position}`}
-              className="absolute -bottom-1 -right-1 z-10 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#223969] px-1 text-[9px] font-bold text-[#faf7f0] ring-1 ring-[#efe7d8]"
-            >
-              {remainingCards}
-            </span>
-          )}
         </div>
 
         <span className="w-full truncate text-[10.5px] font-bold leading-tight text-[#faf3e6] sm:text-[11px]">
           {displayName}
         </span>
 
+        {/* Purely visual mini navy card fan — zero numbers */}
+        <OpponentNavyFan
+          position={position}
+          remainingCards={remainingCards}
+          mini
+        />
+
         <div className="flex flex-col text-[8.5px] leading-tight text-[#d8c7ae] sm:text-[9px]">
-          <span>Call: {callLabel}</span>
+          <span className={callMade ? 'font-bold text-emerald-300' : ''}>
+            Call: {callLabel}
+          </span>
           <span>Score: {seat.totalScore}</span>
         </div>
 
         <CapturedStack
           seatIndex={seat.seatIndex}
-          capturedPoints={seat.capturedPoints}
+          capturedPoints={shownPoints}
+          tricksWon={shownTricks}
           mini
         />
       </div>
@@ -614,7 +700,13 @@ export function SeatHub({
       </div>
 
       <div className="mt-1 flex items-center justify-center gap-1.5">
-        <span className="glass-pill whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-[#f3e6cf]">
+        <span
+          className={`glass-pill whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+            callMade
+              ? '!border-emerald-400/55 text-emerald-200'
+              : 'text-[#f3e6cf]'
+          }`}
+        >
           Call: {callLabel}
         </span>
         <span className="glass-pill whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-[#f3e6cf]">
@@ -638,7 +730,8 @@ export function SeatHub({
           <OpponentNavyFan position="top" remainingCards={remainingCards} />
           <CapturedStack
             seatIndex={seat.seatIndex}
-            capturedPoints={seat.capturedPoints}
+            capturedPoints={shownPoints}
+            tricksWon={shownTricks}
           />
         </div>
       </div>
@@ -658,7 +751,8 @@ export function SeatHub({
         <div className="flex flex-col items-center gap-2.5">
           <CapturedStack
             seatIndex={seat.seatIndex}
-            capturedPoints={seat.capturedPoints}
+            capturedPoints={shownPoints}
+            tricksWon={shownTricks}
           />
           <OpponentNavyFan position="left" remainingCards={remainingCards} />
         </div>
@@ -679,7 +773,8 @@ export function SeatHub({
           <OpponentNavyFan position="right" remainingCards={remainingCards} />
           <CapturedStack
             seatIndex={seat.seatIndex}
-            capturedPoints={seat.capturedPoints}
+            capturedPoints={shownPoints}
+            tricksWon={shownTricks}
           />
         </div>
         {avatarBlock}
@@ -699,10 +794,13 @@ export function SeatHub({
       {avatarBlock}
       <CapturedStack
         seatIndex={seat.seatIndex}
-        capturedPoints={seat.capturedPoints}
+        capturedPoints={shownPoints}
+        tricksWon={shownTricks}
       />
     </div>
   );
 }
+
+export const SeatHub = React.memo(SeatHubInner);
 
 export default SeatHub;

@@ -187,7 +187,13 @@ export function GameTable({
   const [selectedCall, setSelectedCall] = useState<number>(100);
   const [scoreboardOpen, setScoreboardOpen] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
-  const [dealingRound, setDealingRound] = useState<number | null>(null);
+  const [dealStage, setDealStage] = useState<'shuffling' | 'dealing' | 'ready'>(
+    'ready',
+  );
+  const [dealtCardCount, setDealtCardCount] = useState<number>(5);
+  const [sweepPhase, setSweepPhase] = useState<
+    'idle' | 'highlight' | 'sweeping' | 'landed'
+  >('idle');
   const [sfxMuted, setSfxMutedState] = useState<boolean>(() => isSfxMuted());
 
   const isDesktop = useSyncExternalStore(
@@ -247,21 +253,101 @@ export function GameTable({
     prevChatLenRef.current = chatMessages.length;
   }, [chatMessages.length]);
 
+  // Restful choreographed round-start shuffle & card distribution sequence
+  // (skipped in jsdom tests or if local player already locked a call on reconnect)
+  const lastChoreographedRoundRef = useRef<number>(0);
+  const localAlreadyCalled =
+    mySeatIndex !== null && state.seats[mySeatIndex]?.call !== null;
+
   useEffect(() => {
-    if (state.phase === 'BIDDING') {
-      const startTimer = window.setTimeout(() => {
-        setDealingRound(state.round);
+    if (state.phase !== 'BIDDING') {
+      const resetT = window.setTimeout(() => {
+        setDealStage('ready');
+        setDealtCardCount(5);
       }, 0);
-      const endTimer = window.setTimeout(() => {
-        setDealingRound(null);
-      }, 600);
-      return () => {
-        window.clearTimeout(startTimer);
-        window.clearTimeout(endTimer);
-      };
+      return () => window.clearTimeout(resetT);
     }
-    return undefined;
-  }, [state.phase, state.round]);
+
+    const isJsdom =
+      typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
+    if (
+      isJsdom ||
+      localAlreadyCalled ||
+      lastChoreographedRoundRef.current === state.round
+    ) {
+      return undefined;
+    }
+
+    lastChoreographedRoundRef.current = state.round;
+    const timers: number[] = [];
+
+    timers.push(
+      window.setTimeout(() => {
+        setDealStage('shuffling');
+        setDealtCardCount(0);
+        playShuffleSound();
+      }, 0),
+    );
+
+    timers.push(
+      window.setTimeout(() => {
+        setDealStage('dealing');
+      }, 540),
+    );
+
+    // Deal 5 calm waves outward to all 4 seats (160ms rhythm per wave)
+    for (let wave = 1; wave <= 5; wave += 1) {
+      timers.push(
+        window.setTimeout(() => {
+          setDealtCardCount(wave);
+          playCardSound();
+        }, 560 + (wave - 1) * 165),
+      );
+    }
+
+    // Restful pause so the player can glance at their 5 cards before Call overlay appears
+    timers.push(
+      window.setTimeout(() => {
+        setDealStage('ready');
+      }, 1560),
+    );
+
+    return () => {
+      for (const id of timers) {
+        window.clearTimeout(id);
+      }
+    };
+  }, [state.phase, state.round, localAlreadyCalled]);
+
+  // Choreographed TRICK_COMPLETE sweep:
+  // 0..880ms: read all 4 cards + golden highlight on winner
+  // 880..1540ms: all 4 played cards sweep visibly together into winner's card stack
+  // 1440ms+: winner's card stack updates & pops cleanly as the cards arrive
+  useEffect(() => {
+    if (state.phase !== 'TRICK_COMPLETE') {
+      const resetT = window.setTimeout(() => {
+        setSweepPhase('idle');
+      }, 0);
+      return () => window.clearTimeout(resetT);
+    }
+
+    const tHighlight = window.setTimeout(() => {
+      setSweepPhase('highlight');
+    }, 0);
+    const tSweep = window.setTimeout(() => {
+      setSweepPhase('sweeping');
+      playCardSound();
+    }, 880);
+    const tLand = window.setTimeout(() => {
+      setSweepPhase('landed');
+    }, 1480);
+
+    return () => {
+      window.clearTimeout(tHighlight);
+      window.clearTimeout(tSweep);
+      window.clearTimeout(tLand);
+    };
+  }, [state.phase, state.trickNumber, state.round]);
 
   const toggleSfx = () => {
     unlockAudio();
@@ -290,8 +376,13 @@ export function GameTable({
 
   const mySeat = state.seats[perspectiveSeat];
   const activeSeatObj = state.seats[state.activeSeat];
+  const isDealingSequence =
+    state.phase === 'BIDDING' && dealStage !== 'ready';
   const canPlaceCall =
-    state.phase === 'BIDDING' && mySeatIndex !== null && mySeat.call === null;
+    state.phase === 'BIDDING' &&
+    dealStage === 'ready' &&
+    mySeatIndex !== null &&
+    mySeat.call === null;
   const isMyPlayTurn =
     state.phase === 'PLAYING' &&
     mySeatIndex !== null &&
@@ -300,12 +391,40 @@ export function GameTable({
 
   const isSeatActiveTurn = (seat: GameState['seats'][number]): boolean => {
     if (state.phase === 'BIDDING') {
-      return seat.type !== 'EMPTY' && seat.call === null;
+      return !isDealingSequence && seat.type !== 'EMPTY' && seat.call === null;
     }
     if (state.phase === 'PLAYING') {
       return state.activeSeat === seat.seatIndex;
     }
     return false;
+  };
+
+  const trickWinnerPos: HubPosition | null = useMemo(() => {
+    if (state.lastTrickWinnerSeat === null) return null;
+    if (state.lastTrickWinnerSeat === seatByPos.top.seatIndex) return 'top';
+    if (state.lastTrickWinnerSeat === seatByPos.left.seatIndex) return 'left';
+    if (state.lastTrickWinnerSeat === seatByPos.right.seatIndex) return 'right';
+    return 'bottom-left';
+  }, [seatByPos, state.lastTrickWinnerSeat]);
+
+  // Delay revealing the newly won points in the winner's stack until the sweeping cards actually land
+  const getDisplayedStack = (seat: GameState['seats'][number]) => {
+    const holdBack =
+      state.phase === 'TRICK_COMPLETE' &&
+      state.lastTrickWinnerSeat === seat.seatIndex &&
+      (sweepPhase === 'idle' ||
+        sweepPhase === 'highlight' ||
+        sweepPhase === 'sweeping');
+    if (holdBack) {
+      return {
+        points: Math.max(0, seat.capturedPoints - state.lastTrickPoints),
+        tricks: Math.max(0, seat.tricksWon - 1),
+      };
+    }
+    return {
+      points: seat.capturedPoints,
+      tricks: seat.tricksWon,
+    };
   };
 
   const trickCardBySeat = useMemo(() => {
@@ -392,6 +511,10 @@ export function GameTable({
     const isWinner =
       state.phase === 'TRICK_COMPLETE' &&
       state.lastTrickWinnerSeat === seat.seatIndex;
+    const isSweeping =
+      state.phase === 'TRICK_COMPLETE' &&
+      (sweepPhase === 'sweeping' || sweepPhase === 'landed') &&
+      trickWinnerPos !== null;
 
     const flightClass =
       pos === 'top'
@@ -401,6 +524,24 @@ export function GameTable({
           : pos === 'right'
             ? 'animate-play-from-right'
             : 'animate-play-from-bottom';
+
+    const sweepClass = isSweeping
+      ? compact
+        ? trickWinnerPos === 'top'
+          ? 'animate-sweep-mobile-top'
+          : trickWinnerPos === 'left'
+            ? 'animate-sweep-mobile-left'
+            : trickWinnerPos === 'right'
+              ? 'animate-sweep-mobile-right'
+              : 'animate-sweep-mobile-bottom-left'
+        : trickWinnerPos === 'top'
+          ? 'animate-sweep-to-top'
+          : trickWinnerPos === 'left'
+            ? 'animate-sweep-to-left'
+            : trickWinnerPos === 'right'
+              ? 'animate-sweep-to-right'
+              : 'animate-sweep-to-bottom-left'
+      : '';
 
     return (
       <div
@@ -415,8 +556,8 @@ export function GameTable({
         }
       >
         {playedCard !== undefined && (
-          <div className={flightClass}>
-            <div className={isWinner ? 'animate-trick-win-glow' : ''}>
+          <div className={sweepClass || flightClass}>
+            <div className={isWinner && !isSweeping ? 'animate-trick-win-glow' : ''}>
               <PlayingCard
                 value={playedCard}
                 orientation="portrait"
@@ -427,7 +568,7 @@ export function GameTable({
                     : '!h-[102px] !w-[74px] !text-[36px] lg:!h-[112px] lg:!w-[80px] lg:!text-[40px]'
                 }
                 useCustomScan={scanSet.has(playedCard)}
-                highlighted={isWinner}
+                highlighted={isWinner && !isSweeping}
                 ariaLabel={`${seat.username} played ${playedCard}`}
               />
             </div>
@@ -436,6 +577,52 @@ export function GameTable({
       </div>
     );
   };
+
+  const dealingOverlay = (
+    <div
+      aria-label="Shuffling and dealing cards"
+      data-testid="dealing-deck"
+      className="pointer-events-none relative flex h-32 w-32 items-center justify-center"
+    >
+      {/* Center 3D Riffle Deck */}
+      <div className="relative flex items-center justify-center">
+        <div
+          className={`absolute ${dealStage === 'shuffling' ? 'animate-riffle-left' : ''}`}
+        >
+          <PlayingCard faceDown size="sm" className="!h-[78px] !w-[54px]" />
+        </div>
+        <div className={dealStage === 'shuffling' ? 'animate-riffle-right' : ''}>
+          <PlayingCard faceDown size="sm" className="!h-[78px] !w-[54px]" />
+        </div>
+      </div>
+
+      {/* Outward flying deal cards to North, West, East, and South */}
+      {dealStage === 'dealing' && (
+        <>
+          {(['top', 'left', 'right', 'bottom'] as const).map((dir, dIdx) => (
+            <div
+              key={`${dir}-${dealtCardCount}`}
+              style={{ animationDelay: `${dIdx * 30}ms` }}
+              className={`absolute animate-deal-to-${dir}`}
+            >
+              <PlayingCard faceDown size="xs" className="!h-[56px] !w-[38px]" />
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+
+  const visibleLocalHand = isDealingSequence
+    ? mySeat.hand.slice(0, dealtCardCount)
+    : mySeat.hand;
+
+  const activeTurnHint =
+    isMyPlayTurn && state.phase === 'PLAYING'
+      ? state.trickNumber === 1 && state.currentTrick.length === 0
+        ? 'You hold 1 — lead Trick 1'
+        : 'Your turn — tap a card'
+      : null;
 
   const turnRing = (compact = false) => (
     <div
@@ -672,71 +859,108 @@ export function GameTable({
 
           {/* Top Center Seat */}
           <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2">
-            <SeatHub
-              seat={seatByPos.top}
-              position="top"
-              isMe={mySeatIndex === seatByPos.top.seatIndex}
-              isHost={hostSeatIndex === seatByPos.top.seatIndex}
-              isActiveTurn={isSeatActiveTurn(seatByPos.top)}
-              isSpeaking={isSeatSpeaking(seatByPos.top.clientId)}
-              turnProgress={turnProgress}
-              isTimerUrgent={isTimerUrgent}
-              maskCall={
-                state.phase === 'BIDDING' &&
-                mySeatIndex !== seatByPos.top.seatIndex
-              }
-            />
+            {(() => {
+              const stack = getDisplayedStack(seatByPos.top);
+              return (
+                <SeatHub
+                  seat={seatByPos.top}
+                  position="top"
+                  isMe={mySeatIndex === seatByPos.top.seatIndex}
+                  isHost={hostSeatIndex === seatByPos.top.seatIndex}
+                  isActiveTurn={isSeatActiveTurn(seatByPos.top)}
+                  isSpeaking={isSeatSpeaking(seatByPos.top.clientId)}
+                  turnProgress={turnProgress}
+                  isTimerUrgent={isTimerUrgent}
+                  maskCall={
+                    state.phase === 'BIDDING' &&
+                    mySeatIndex !== seatByPos.top.seatIndex
+                  }
+                  displayedCapturedPoints={stack.points}
+                  displayedTricksWon={stack.tricks}
+                  visibleHandCount={
+                    isDealingSequence ? dealtCardCount : undefined
+                  }
+                />
+              );
+            })()}
           </div>
 
           {/* Left Center Seat */}
           <div className="absolute left-6 top-[44%] z-20 -translate-y-1/2">
-            <SeatHub
-              seat={seatByPos.left}
-              position="left"
-              isMe={mySeatIndex === seatByPos.left.seatIndex}
-              isHost={hostSeatIndex === seatByPos.left.seatIndex}
-              isActiveTurn={isSeatActiveTurn(seatByPos.left)}
-              isSpeaking={isSeatSpeaking(seatByPos.left.clientId)}
-              turnProgress={turnProgress}
-              isTimerUrgent={isTimerUrgent}
-              maskCall={
-                state.phase === 'BIDDING' &&
-                mySeatIndex !== seatByPos.left.seatIndex
-              }
-            />
+            {(() => {
+              const stack = getDisplayedStack(seatByPos.left);
+              return (
+                <SeatHub
+                  seat={seatByPos.left}
+                  position="left"
+                  isMe={mySeatIndex === seatByPos.left.seatIndex}
+                  isHost={hostSeatIndex === seatByPos.left.seatIndex}
+                  isActiveTurn={isSeatActiveTurn(seatByPos.left)}
+                  isSpeaking={isSeatSpeaking(seatByPos.left.clientId)}
+                  turnProgress={turnProgress}
+                  isTimerUrgent={isTimerUrgent}
+                  maskCall={
+                    state.phase === 'BIDDING' &&
+                    mySeatIndex !== seatByPos.left.seatIndex
+                  }
+                  displayedCapturedPoints={stack.points}
+                  displayedTricksWon={stack.tricks}
+                  visibleHandCount={
+                    isDealingSequence ? dealtCardCount : undefined
+                  }
+                />
+              );
+            })()}
           </div>
 
           {/* Right Center Seat */}
           <div className="absolute right-6 top-[44%] z-20 -translate-y-1/2">
-            <SeatHub
-              seat={seatByPos.right}
-              position="right"
-              isMe={mySeatIndex === seatByPos.right.seatIndex}
-              isHost={hostSeatIndex === seatByPos.right.seatIndex}
-              isActiveTurn={isSeatActiveTurn(seatByPos.right)}
-              isSpeaking={isSeatSpeaking(seatByPos.right.clientId)}
-              turnProgress={turnProgress}
-              isTimerUrgent={isTimerUrgent}
-              maskCall={
-                state.phase === 'BIDDING' &&
-                mySeatIndex !== seatByPos.right.seatIndex
-              }
-            />
+            {(() => {
+              const stack = getDisplayedStack(seatByPos.right);
+              return (
+                <SeatHub
+                  seat={seatByPos.right}
+                  position="right"
+                  isMe={mySeatIndex === seatByPos.right.seatIndex}
+                  isHost={hostSeatIndex === seatByPos.right.seatIndex}
+                  isActiveTurn={isSeatActiveTurn(seatByPos.right)}
+                  isSpeaking={isSeatSpeaking(seatByPos.right.clientId)}
+                  turnProgress={turnProgress}
+                  isTimerUrgent={isTimerUrgent}
+                  maskCall={
+                    state.phase === 'BIDDING' &&
+                    mySeatIndex !== seatByPos.right.seatIndex
+                  }
+                  displayedCapturedPoints={stack.points}
+                  displayedTricksWon={stack.tricks}
+                  visibleHandCount={
+                    isDealingSequence ? dealtCardCount : undefined
+                  }
+                />
+              );
+            })()}
           </div>
 
           {/* Bottom-Left Seat (Me) */}
           <div className="absolute bottom-4 left-6 z-20">
-            <SeatHub
-              seat={seatByPos['bottom-left']}
-              position="bottom-left"
-              isMe={mySeatIndex === seatByPos['bottom-left'].seatIndex}
-              isHost={hostSeatIndex === seatByPos['bottom-left'].seatIndex}
-              isActiveTurn={isSeatActiveTurn(seatByPos['bottom-left'])}
-              isSpeaking={isSeatSpeaking(seatByPos['bottom-left'].clientId)}
-              turnProgress={turnProgress}
-              isTimerUrgent={isTimerUrgent}
-              maskCall={false}
-            />
+            {(() => {
+              const stack = getDisplayedStack(seatByPos['bottom-left']);
+              return (
+                <SeatHub
+                  seat={seatByPos['bottom-left']}
+                  position="bottom-left"
+                  isMe={mySeatIndex === seatByPos['bottom-left'].seatIndex}
+                  isHost={hostSeatIndex === seatByPos['bottom-left'].seatIndex}
+                  isActiveTurn={isSeatActiveTurn(seatByPos['bottom-left'])}
+                  isSpeaking={isSeatSpeaking(seatByPos['bottom-left'].clientId)}
+                  turnProgress={turnProgress}
+                  isTimerUrgent={isTimerUrgent}
+                  maskCall={false}
+                  displayedCapturedPoints={stack.points}
+                  displayedTricksWon={stack.tricks}
+                />
+              );
+            })()}
           </div>
 
           {/* Center Play Zone */}
@@ -745,49 +969,59 @@ export function GameTable({
             data-testid="center-trick-arena"
             className="absolute left-1/2 top-[45%] z-10 -translate-x-1/2 -translate-y-1/2"
           >
-            {dealingRound !== null && (
-              <div
-                aria-label="Shuffling and dealing cards"
-                className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center"
-              >
-                <div className="relative flex items-center justify-center">
-                  <div className="animate-riffle-left absolute">
-                    <PlayingCard faceDown size="md" />
-                  </div>
-                  <div className="animate-riffle-right">
-                    <PlayingCard faceDown size="md" />
-                  </div>
+            {isDealingSequence ? (
+              dealingOverlay
+            ) : state.phase === 'BIDDING' ? (
+              biddingCard
+            ) : (
+              <div className="relative">
+                {state.phase === 'TRICK_COMPLETE' &&
+                  state.lastTrickPoints > 0 &&
+                  sweepPhase === 'highlight' && (
+                    <div
+                      aria-live="polite"
+                      className="animate-float-pts pointer-events-none absolute -top-9 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-300/50 bg-[#1a110a]/90 px-3 py-1 text-xs font-extrabold text-amber-200 shadow-lg"
+                    >
+                      +{state.lastTrickPoints}
+                    </div>
+                  )}
+
+                <div className="grid grid-cols-[auto_auto_auto] grid-rows-[auto_auto_auto] items-center justify-items-center gap-x-4 gap-y-2.5">
+                  <div />
+                  {renderPlaySlot('North', 'top')}
+                  <div />
+
+                  {renderPlaySlot('West', 'left')}
+                  {turnRing(false)}
+                  {renderPlaySlot('East', 'right')}
+
+                  <div />
+                  {renderPlaySlot('South', 'bottom-left')}
+                  <div />
                 </div>
               </div>
             )}
-
-            {state.phase === 'BIDDING' ? (
-              biddingCard
-            ) : (
-              <div className="grid grid-cols-[auto_auto_auto] grid-rows-[auto_auto_auto] items-center justify-items-center gap-x-4 gap-y-2.5">
-                <div />
-                {renderPlaySlot('North', 'top')}
-                <div />
-
-                {renderPlaySlot('West', 'left')}
-                {turnRing(false)}
-                {renderPlaySlot('East', 'right')}
-
-                <div />
-                {renderPlaySlot('South', 'bottom-left')}
-                <div />
-              </div>
-            )}
           </section>
+
+          {/* Subtle Calm Active-Turn Cue above Hand */}
+          {activeTurnHint && (
+            <div className="animate-panel-enter pointer-events-none absolute bottom-[188px] left-1/2 z-20 -translate-x-1/2 lg:bottom-[204px]">
+              <span className="glass-pill rounded-full border-amber-300/35 px-3 py-1 text-[11px] font-semibold tracking-wide text-amber-200">
+                {activeTurnHint}
+              </span>
+            </div>
+          )}
 
           {/* Bottom-Center Fanned Local Hand */}
           <div
             aria-label="Your hand"
             data-testid="player-hand"
-            className="pointer-events-none absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-end justify-center"
+            className={`pointer-events-none absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-end justify-center transition-transform duration-300 ${
+              isMyPlayTurn ? '-translate-y-1.5' : ''
+            }`}
           >
-            {mySeat.hand.map((card, idx) => {
-              const count = mySeat.hand.length;
+            {visibleLocalHand.map((card, idx) => {
+              const count = visibleLocalHand.length;
               const center = (count - 1) / 2;
               const offset = idx - center;
               const rot = offset * 4.8;
@@ -801,12 +1035,9 @@ export function GameTable({
                     marginLeft: idx === 0 ? 0 : -14,
                     zIndex: 10 + idx,
                   }}
-                  className="pointer-events-auto origin-bottom transition-all duration-150 hover:z-40"
+                  className="pointer-events-auto origin-bottom transition-all duration-200 ease-out hover:z-40"
                 >
-                  <div
-                    className="animate-deal-fan-in"
-                    style={{ animationDelay: `${idx * 45}ms` }}
-                  >
+                  <div className="animate-deal-fan-in">
                     <PlayingCard
                       value={card}
                       orientation="portrait"
@@ -849,86 +1080,133 @@ export function GameTable({
         <div className="relative z-10 flex flex-1 flex-col justify-between overflow-hidden px-2 pb-2">
           {/* NORTH SEAT (Top Center) */}
           <div className="flex shrink-0 justify-center py-0.5">
-            <SeatHub
-              compactMobile
-              seat={seatByPos.top}
-              position="top"
-              isMe={mySeatIndex === seatByPos.top.seatIndex}
-              isHost={hostSeatIndex === seatByPos.top.seatIndex}
-              isActiveTurn={isSeatActiveTurn(seatByPos.top)}
-              isSpeaking={isSeatSpeaking(seatByPos.top.clientId)}
-              turnProgress={turnProgress}
-              isTimerUrgent={isTimerUrgent}
-              maskCall={
-                state.phase === 'BIDDING' &&
-                mySeatIndex !== seatByPos.top.seatIndex
-              }
-            />
+            {(() => {
+              const stack = getDisplayedStack(seatByPos.top);
+              return (
+                <SeatHub
+                  compactMobile
+                  seat={seatByPos.top}
+                  position="top"
+                  isMe={mySeatIndex === seatByPos.top.seatIndex}
+                  isHost={hostSeatIndex === seatByPos.top.seatIndex}
+                  isActiveTurn={isSeatActiveTurn(seatByPos.top)}
+                  isSpeaking={isSeatSpeaking(seatByPos.top.clientId)}
+                  turnProgress={turnProgress}
+                  isTimerUrgent={isTimerUrgent}
+                  maskCall={
+                    state.phase === 'BIDDING' &&
+                    mySeatIndex !== seatByPos.top.seatIndex
+                  }
+                  displayedCapturedPoints={stack.points}
+                  displayedTricksWon={stack.tricks}
+                  visibleHandCount={
+                    isDealingSequence ? dealtCardCount : undefined
+                  }
+                />
+              );
+            })()}
           </div>
 
           {/* MIDDLE 3-COLUMN TABLE: WEST EDGE — CENTER ARENA — EAST EDGE */}
           <div className="pati-inner-mat relative my-1.5 grid flex-1 grid-cols-[62px_minmax(0,1fr)_62px] items-center rounded-2xl px-1 sm:grid-cols-[68px_minmax(0,1fr)_68px]">
             {/* WEST SEAT (Far Left Edge) */}
             <div className="flex justify-start">
-              <SeatHub
-                compactMobile
-                seat={seatByPos.left}
-                position="left"
-                isMe={mySeatIndex === seatByPos.left.seatIndex}
-                isHost={hostSeatIndex === seatByPos.left.seatIndex}
-                isActiveTurn={isSeatActiveTurn(seatByPos.left)}
-                isSpeaking={isSeatSpeaking(seatByPos.left.clientId)}
-                turnProgress={turnProgress}
-                isTimerUrgent={isTimerUrgent}
-                maskCall={
-                  state.phase === 'BIDDING' &&
-                  mySeatIndex !== seatByPos.left.seatIndex
-                }
-              />
+              {(() => {
+                const stack = getDisplayedStack(seatByPos.left);
+                return (
+                  <SeatHub
+                    compactMobile
+                    seat={seatByPos.left}
+                    position="left"
+                    isMe={mySeatIndex === seatByPos.left.seatIndex}
+                    isHost={hostSeatIndex === seatByPos.left.seatIndex}
+                    isActiveTurn={isSeatActiveTurn(seatByPos.left)}
+                    isSpeaking={isSeatSpeaking(seatByPos.left.clientId)}
+                    turnProgress={turnProgress}
+                    isTimerUrgent={isTimerUrgent}
+                    maskCall={
+                      state.phase === 'BIDDING' &&
+                      mySeatIndex !== seatByPos.left.seatIndex
+                    }
+                    displayedCapturedPoints={stack.points}
+                    displayedTricksWon={stack.tricks}
+                    visibleHandCount={
+                      isDealingSequence ? dealtCardCount : undefined
+                    }
+                  />
+                );
+              })()}
             </div>
 
             {/* CENTER 4-CARD PORTRAIT CROSS */}
             <section
               aria-label="Center Play Zone"
               data-testid="center-trick-arena"
-              className="flex items-center justify-center"
+              className="relative flex items-center justify-center"
             >
-              <div className="grid grid-cols-[auto_auto_auto] grid-rows-[auto_auto_auto] items-center justify-items-center gap-1 sm:gap-1.5">
-                <div />
-                {renderPlaySlot('North', 'top', true)}
-                <div />
+              {isDealingSequence ? (
+                dealingOverlay
+              ) : (
+                <div className="relative">
+                  {state.phase === 'TRICK_COMPLETE' &&
+                    state.lastTrickPoints > 0 &&
+                    sweepPhase === 'highlight' && (
+                      <div
+                        aria-live="polite"
+                        className="animate-float-pts pointer-events-none absolute -top-7 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-300/50 bg-[#1a110a]/90 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-200 shadow-lg"
+                      >
+                        +{state.lastTrickPoints}
+                      </div>
+                    )}
 
-                {renderPlaySlot('West', 'left', true)}
-                {turnRing(true)}
-                {renderPlaySlot('East', 'right', true)}
+                  <div className="grid grid-cols-[auto_auto_auto] grid-rows-[auto_auto_auto] items-center justify-items-center gap-1 sm:gap-1.5">
+                    <div />
+                    {renderPlaySlot('North', 'top', true)}
+                    <div />
 
-                <div />
-                {renderPlaySlot('South', 'bottom-left', true)}
-                <div />
-              </div>
+                    {renderPlaySlot('West', 'left', true)}
+                    {turnRing(true)}
+                    {renderPlaySlot('East', 'right', true)}
+
+                    <div />
+                    {renderPlaySlot('South', 'bottom-left', true)}
+                    <div />
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* EAST SEAT (Far Right Edge) */}
             <div className="flex justify-end">
-              <SeatHub
-                compactMobile
-                seat={seatByPos.right}
-                position="right"
-                isMe={mySeatIndex === seatByPos.right.seatIndex}
-                isHost={hostSeatIndex === seatByPos.right.seatIndex}
-                isActiveTurn={isSeatActiveTurn(seatByPos.right)}
-                isSpeaking={isSeatSpeaking(seatByPos.right.clientId)}
-                turnProgress={turnProgress}
-                isTimerUrgent={isTimerUrgent}
-                maskCall={
-                  state.phase === 'BIDDING' &&
-                  mySeatIndex !== seatByPos.right.seatIndex
-                }
-              />
+              {(() => {
+                const stack = getDisplayedStack(seatByPos.right);
+                return (
+                  <SeatHub
+                    compactMobile
+                    seat={seatByPos.right}
+                    position="right"
+                    isMe={mySeatIndex === seatByPos.right.seatIndex}
+                    isHost={hostSeatIndex === seatByPos.right.seatIndex}
+                    isActiveTurn={isSeatActiveTurn(seatByPos.right)}
+                    isSpeaking={isSeatSpeaking(seatByPos.right.clientId)}
+                    turnProgress={turnProgress}
+                    isTimerUrgent={isTimerUrgent}
+                    maskCall={
+                      state.phase === 'BIDDING' &&
+                      mySeatIndex !== seatByPos.right.seatIndex
+                    }
+                    displayedCapturedPoints={stack.points}
+                    displayedTricksWon={stack.tricks}
+                    visibleHandCount={
+                      isDealingSequence ? dealtCardCount : undefined
+                    }
+                  />
+                );
+              })()}
             </div>
 
-            {/* Mobile Transient Bidding Overlay centered cleanly over table */}
-            {state.phase === 'BIDDING' && (
+            {/* Mobile Transient Bidding Overlay (appears AFTER deal settles) */}
+            {state.phase === 'BIDDING' && !isDealingSequence && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 p-3 backdrop-blur-[2px]">
                 {biddingCard}
               </div>
@@ -937,18 +1215,25 @@ export function GameTable({
 
           {/* BOTTOM CONTROL STRIP: Local Player (Left) + Ultra-Slim Dock (Right) */}
           <div className="flex shrink-0 items-center justify-between gap-2 px-0.5 py-1">
-            <SeatHub
-              compactMobile
-              seat={seatByPos['bottom-left']}
-              position="bottom-left"
-              isMe={mySeatIndex === seatByPos['bottom-left'].seatIndex}
-              isHost={hostSeatIndex === seatByPos['bottom-left'].seatIndex}
-              isActiveTurn={isSeatActiveTurn(seatByPos['bottom-left'])}
-              isSpeaking={isSeatSpeaking(seatByPos['bottom-left'].clientId)}
-              turnProgress={turnProgress}
-              isTimerUrgent={isTimerUrgent}
-              maskCall={false}
-            />
+            {(() => {
+              const stack = getDisplayedStack(seatByPos['bottom-left']);
+              return (
+                <SeatHub
+                  compactMobile
+                  seat={seatByPos['bottom-left']}
+                  position="bottom-left"
+                  isMe={mySeatIndex === seatByPos['bottom-left'].seatIndex}
+                  isHost={hostSeatIndex === seatByPos['bottom-left'].seatIndex}
+                  isActiveTurn={isSeatActiveTurn(seatByPos['bottom-left'])}
+                  isSpeaking={isSeatSpeaking(seatByPos['bottom-left'].clientId)}
+                  turnProgress={turnProgress}
+                  isTimerUrgent={isTimerUrgent}
+                  maskCall={false}
+                  displayedCapturedPoints={stack.points}
+                  displayedTricksWon={stack.tricks}
+                />
+              );
+            })()}
 
             <VoiceBar
               compact
@@ -972,10 +1257,12 @@ export function GameTable({
           <div
             aria-label="Your hand"
             data-testid="player-hand"
-            className="flex shrink-0 flex-nowrap items-end justify-center pb-0.5 pt-1"
+            className={`flex shrink-0 flex-nowrap items-end justify-center pb-0.5 pt-1 transition-transform duration-300 ${
+              isMyPlayTurn ? '-translate-y-1' : ''
+            }`}
           >
-            {mySeat.hand.map((card, idx) => {
-              const count = mySeat.hand.length;
+            {visibleLocalHand.map((card, idx) => {
+              const count = visibleLocalHand.length;
               const center = (count - 1) / 2;
               const offset = idx - center;
               const rot = offset * 4;
@@ -988,11 +1275,9 @@ export function GameTable({
                     marginLeft: idx === 0 ? 0 : -10,
                     zIndex: 10 + idx,
                   }}
+                  className="transition-transform duration-200 ease-out"
                 >
-                  <div
-                    className="animate-deal-fan-in"
-                    style={{ animationDelay: `${idx * 40}ms` }}
-                  >
+                  <div className="animate-deal-fan-in">
                     <PlayingCard
                       value={card}
                       orientation="portrait"

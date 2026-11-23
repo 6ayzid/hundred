@@ -49,8 +49,30 @@ describe('SeatHub', () => {
     const avatar = screen.getByTestId('seat-avatar-1');
     expect(avatar.getAttribute('data-speaking')).toBe('true');
     expect(avatar.className).toContain('ring-emerald-400');
-    expect(screen.getByTestId('opponent-fan-top')).toBeTruthy();
-    expect(screen.getByTestId('captured-stack-1').textContent?.trim()).toBe('0');
+    const fan = screen.getByTestId('opponent-fan-top');
+    expect(fan).toBeTruthy();
+    // Visual-only opponent card fan: zero numeric badge or text
+    expect((fan.textContent ?? '').trim()).toBe('');
+    // Starts with empty placeholder when 0 captured points
+    const emptyStack = screen.getByTestId('captured-stack-1');
+    expect(emptyStack.getAttribute('data-empty')).toBe('true');
+    expect((emptyStack.textContent ?? '').trim()).toBe('');
+
+    // Renders numeric dark-navy card stack once points are won
+    const wonSeat = { ...state.seats[1], capturedPoints: 36, tricksWon: 1 };
+    const { container } = render(
+      <SeatHub
+        seat={wonSeat}
+        position="right"
+        isMe={false}
+        isHost={false}
+        isActiveTurn={false}
+        isSpeaking={false}
+      />,
+    );
+    const filledStack = container.querySelector('[data-testid="captured-stack-1"]');
+    expect(filledStack?.getAttribute('data-empty')).toBe('false');
+    expect(filledStack?.textContent?.trim()).toBe('36');
   });
 });
 

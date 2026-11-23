@@ -309,49 +309,49 @@
 }
 
 .pati-inner-mat {
-  background-color: #7c2b1a;
+  background-color: #6b2919;
   background-image:
     /* Warm lantern ambient wash across the mat */
     radial-gradient(
-      circle at 92% 10%,
-      rgba(255, 210, 114, 0.26) 0%,
-      rgba(226, 148, 48, 0.1) 30%,
+      circle at 90% 10%,
+      rgba(255, 212, 124, 0.22) 0%,
+      rgba(222, 148, 52, 0.08) 32%,
       transparent 58%
     ),
-    /* Soft table depth vignette keeping center warm & legible */
+    /* Soft table depth vignette keeping center warm, calm & easy on the eyes */
     radial-gradient(
       ellipse 84% 78% at 50% 48%,
-      rgba(218, 152, 56, 0.26) 0%,
-      rgba(138, 44, 24, 0.16) 58%,
-      rgba(44, 15, 9, 0.56) 100%
+      rgba(208, 146, 62, 0.2) 0%,
+      rgba(124, 44, 24, 0.14) 58%,
+      rgba(36, 13, 8, 0.54) 100%
     ),
-    /* Terracotta-crimson & mustard-ochre Bangladeshi pati diagonal reed weave */
+    /* Subtle handwoven Bangladeshi pati reed cross-weave */
     repeating-linear-gradient(
       45deg,
-      rgba(226, 166, 66, 0.15) 0px,
-      rgba(226, 166, 66, 0.15) 3px,
-      transparent 3px,
-      transparent 10px
+      rgba(224, 168, 78, 0.09) 0px,
+      rgba(224, 168, 78, 0.09) 2.5px,
+      transparent 2.5px,
+      transparent 9px
     ),
     repeating-linear-gradient(
       -45deg,
-      rgba(162, 42, 26, 0.22) 0px,
-      rgba(162, 42, 26, 0.22) 3px,
-      transparent 3px,
-      transparent 10px
+      rgba(138, 38, 22, 0.14) 0px,
+      rgba(138, 38, 22, 0.14) 2.5px,
+      transparent 2.5px,
+      transparent 9px
     ),
     repeating-linear-gradient(
       0deg,
-      rgba(240, 186, 92, 0.08) 0px,
-      rgba(240, 186, 92, 0.08) 1px,
+      rgba(242, 192, 108, 0.045) 0px,
+      rgba(242, 192, 108, 0.045) 1px,
       transparent 1px,
       transparent 4px
     );
   box-shadow:
-    inset 0 0 0 2px rgba(232, 174, 78, 0.42),
-    inset 0 0 0 6px rgba(68, 22, 12, 0.78),
-    inset 0 0 0 8px rgba(214, 144, 52, 0.34),
-    0 20px 46px rgba(0, 0, 0, 0.58);
+    inset 0 0 0 1.5px rgba(232, 176, 86, 0.36),
+    inset 0 0 0 6px rgba(56, 19, 11, 0.72),
+    inset 0 0 0 7.5px rgba(208, 144, 58, 0.26),
+    0 20px 48px rgba(0, 0, 0, 0.58);
 }
 
 .glass-pill {
@@ -364,11 +364,11 @@
 
 .visiting-card-paper {
   background-color: #faf7f0;
-  background-image: linear-gradient(160deg, #fcfaf4 0%, #f3ecdd 100%);
+  background-image: linear-gradient(160deg, #fdfbf6 0%, #f2ead9 100%);
   border: 1px solid #d7c9ae;
   box-shadow:
-    0 7px 16px rgba(0, 0, 0, 0.42),
-    0 1px 3px rgba(0, 0, 0, 0.24);
+    0 7px 16px rgba(0, 0, 0, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
 .navy-card-back {
@@ -377,80 +377,309 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
-/* Dark navy-blue stacked visiting-card deck matching card backs with crisp paper deck edges */
+/* Dark navy-blue stacked visiting-card deck — grows thicker with tricks won */
 .captured-deck-3d {
   background: linear-gradient(155deg, #29447a 0%, #16274b 100%);
   border: 1.5px solid #efe7d8;
   box-shadow:
     0 2px 0 #ebe3d3,
     0 3.5px 0 #1b2f58,
+    0 8px 15px rgba(0, 0, 0, 0.48);
+}
+
+.captured-deck-3d-mid {
+  box-shadow:
+    0 2px 0 #ebe3d3,
+    0 3.5px 0 #1b2f58,
     0 5.5px 0 #e4dac7,
     0 7px 0 #132240,
-    0 11px 18px rgba(0, 0, 0, 0.5);
+    0 11px 18px rgba(0, 0, 0, 0.52);
+}
+
+.captured-deck-3d-tall {
+  box-shadow:
+    0 2px 0 #ebe3d3,
+    0 3.5px 0 #1b2f58,
+    0 5.5px 0 #e6dcc9,
+    0 7px 0 #16274b,
+    0 9px 0 #ded3be,
+    0 10.5px 0 #111e3a,
+    0 15px 22px rgba(0, 0, 0, 0.56);
 }
 
 /* ==========================================================================
-   Purposeful 60fps Tabletop Animations
+   Thoughtful, Restful 60fps Tabletop Animations (GPU transform/opacity only)
    ========================================================================== */
 
 @keyframes play-from-top {
   0% {
     opacity: 0;
-    transform: translateY(-56px) scale(0.84) rotate(-5deg);
+    transform: translate3d(0, -68px, 0) scale(0.82) rotate(-5deg);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
 }
 
 @keyframes play-from-bottom {
   0% {
     opacity: 0;
-    transform: translateY(62px) scale(0.88) rotate(4deg);
+    transform: translate3d(0, 76px, 0) scale(0.86) rotate(4deg);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
 }
 
 @keyframes play-from-left {
   0% {
     opacity: 0;
-    transform: translateX(-64px) scale(0.84) rotate(-8deg);
+    transform: translate3d(-78px, 0, 0) scale(0.82) rotate(-7deg);
   }
   100% {
     opacity: 1;
-    transform: translateX(0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
 }
 
 @keyframes play-from-right {
   0% {
     opacity: 0;
-    transform: translateX(64px) scale(0.84) rotate(8deg);
+    transform: translate3d(78px, 0, 0) scale(0.82) rotate(7deg);
   }
   100% {
     opacity: 1;
-    transform: translateX(0) scale(1) rotate(0deg);
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
 }
 
 .animate-play-from-top {
-  animation: play-from-top 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  animation: play-from-top 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-play-from-bottom {
-  animation: play-from-bottom 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  animation: play-from-bottom 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-play-from-left {
-  animation: play-from-left 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  animation: play-from-left 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-play-from-right {
-  animation: play-from-right 260ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  animation: play-from-right 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Winning trick cards visibly gather & glide smoothly into the winner's card stack */
+@keyframes sweep-to-top {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translate3d(18px, -24px, 0) scale(0.92) rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(74px, -230px, 0) scale(0.46) rotate(12deg);
+  }
+}
+
+@keyframes sweep-to-left {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translate3d(-44px, -10px, 0) scale(0.92) rotate(-5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-340px, -28px, 0) scale(0.46) rotate(-14deg);
+  }
+}
+
+@keyframes sweep-to-right {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translate3d(44px, 8px, 0) scale(0.92) rotate(5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(340px, 26px, 0) scale(0.46) rotate(14deg);
+  }
+}
+
+@keyframes sweep-to-bottom-left {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+  30% {
+    opacity: 1;
+    transform: translate3d(-42px, 34px, 0) scale(0.92) rotate(-6deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-320px, 235px, 0) scale(0.46) rotate(-14deg);
+  }
+}
+
+/* Mobile-tuned sweep distances so cards glide straight to the mobile edge seats */
+@keyframes sweep-mobile-top {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(20px, -210px, 0) scale(0.42) rotate(8deg);
+  }
+}
+
+@keyframes sweep-mobile-left {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-135px, 16px, 0) scale(0.42) rotate(-10deg);
+  }
+}
+
+@keyframes sweep-mobile-right {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(135px, 16px, 0) scale(0.42) rotate(10deg);
+  }
+}
+
+@keyframes sweep-mobile-bottom-left {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-85px, 215px, 0) scale(0.42) rotate(-10deg);
+  }
+}
+
+.animate-sweep-to-top {
+  animation: sweep-to-top 680ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+}
+
+.animate-sweep-to-left {
+  animation: sweep-to-left 680ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+}
+
+.animate-sweep-to-right {
+  animation: sweep-to-right 680ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+}
+
+.animate-sweep-to-bottom-left {
+  animation: sweep-to-bottom-left 680ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+}
+
+.animate-sweep-mobile-top {
+  animation: sweep-mobile-top 640ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+}
+
+.animate-sweep-mobile-left {
+  animation: sweep-mobile-left 640ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+}
+
+.animate-sweep-mobile-right {
+  animation: sweep-mobile-right 640ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+}
+
+.animate-sweep-mobile-bottom-left {
+  animation: sweep-mobile-bottom-left 640ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+}
+
+/* Outward card distribution trajectories from center deck to each seat */
+@keyframes deal-to-top {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -180px, 0) scale(0.58) rotate(-12deg);
+  }
+}
+
+@keyframes deal-to-left {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-240px, 10px, 0) scale(0.58) rotate(-18deg);
+  }
+}
+
+@keyframes deal-to-right {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(240px, 10px, 0) scale(0.58) rotate(18deg);
+  }
+}
+
+@keyframes deal-to-bottom {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 185px, 0) scale(0.72) rotate(8deg);
+  }
+}
+
+.animate-deal-to-top {
+  animation: deal-to-top 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-deal-to-left {
+  animation: deal-to-left 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-deal-to-right {
+  animation: deal-to-right 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-deal-to-bottom {
+  animation: deal-to-bottom 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes trick-win-glow {
@@ -459,25 +688,48 @@
     filter: drop-shadow(0 0 0 rgba(251, 191, 36, 0));
   }
   45% {
-    transform: scale(1.09) translateY(-4px);
+    transform: scale(1.08) translateY(-5px);
     filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.85));
   }
   100% {
-    transform: scale(1.05) translateY(-2px);
+    transform: scale(1.04) translateY(-3px);
     filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.65));
   }
 }
 
 .animate-trick-win-glow {
-  animation: trick-win-glow 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: trick-win-glow 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes float-pts-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.88);
+  }
+  22% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate3d(0, -10px, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -18px, 0) scale(0.96);
+  }
+}
+
+.animate-float-pts {
+  animation: float-pts-rise 1200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes points-pop {
   0% {
-    transform: scale(1);
+    transform: scale(0.88);
   }
-  40% {
-    transform: scale(1.18);
+  45% {
+    transform: scale(1.16);
   }
   100% {
     transform: scale(1);
@@ -485,75 +737,75 @@
 }
 
 .animate-points-pop {
-  animation: points-pop 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: points-pop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes deck-riffle-left {
   0%,
   100% {
-    transform: translateX(-4px) rotate(-4deg);
+    transform: translate3d(-4px, 0, 0) rotate(-3deg);
   }
   45% {
-    transform: translateX(-22px) translateY(-4px) rotate(-13deg);
+    transform: translate3d(-24px, -4px, 0) rotate(-12deg);
   }
-  70% {
-    transform: translateX(-6px) rotate(-3deg);
+  75% {
+    transform: translate3d(-5px, 0, 0) rotate(-2deg);
   }
 }
 
 @keyframes deck-riffle-right {
   0%,
   100% {
-    transform: translateX(4px) rotate(4deg);
+    transform: translate3d(4px, 0, 0) rotate(3deg);
   }
   45% {
-    transform: translateX(22px) translateY(-4px) rotate(13deg);
+    transform: translate3d(24px, -4px, 0) rotate(12deg);
   }
-  70% {
-    transform: translateX(6px) rotate(3deg);
+  75% {
+    transform: translate3d(5px, 0, 0) rotate(2deg);
   }
 }
 
 .animate-riffle-left {
-  animation: deck-riffle-left 360ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: deck-riffle-left 480ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .animate-riffle-right {
-  animation: deck-riffle-right 360ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: deck-riffle-right 480ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes deal-fan-in {
   0% {
     opacity: 0;
-    transform: translateY(-68px) scale(0.72);
+    transform: translate3d(0, -86px, 0) scale(0.68);
   }
-  75% {
+  72% {
     opacity: 1;
-    transform: translateY(3px) scale(1.02);
+    transform: translate3d(0, 3px, 0) scale(1.015);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 .animate-deal-fan-in {
-  animation: deal-fan-in 380ms cubic-bezier(0.18, 0.9, 0.28, 1) both;
+  animation: deal-fan-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes panel-enter {
   0% {
     opacity: 0;
-    transform: translateY(10px) scale(0.97);
+    transform: translate3d(0, 12px, 0) scale(0.97);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 .animate-panel-enter {
-  animation: panel-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: panel-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes lantern-flicker {
@@ -573,7 +825,7 @@
 }
 
 .animate-lantern-flicker {
-  animation: lantern-flicker 3.6s ease-in-out infinite;
+  animation: lantern-flicker 3.8s ease-in-out infinite;
 }
 
 .chat-scroll::-webkit-scrollbar {
@@ -594,7 +846,20 @@
   .animate-play-from-bottom,
   .animate-play-from-left,
   .animate-play-from-right,
+  .animate-sweep-to-top,
+  .animate-sweep-to-left,
+  .animate-sweep-to-right,
+  .animate-sweep-to-bottom-left,
+  .animate-sweep-mobile-top,
+  .animate-sweep-mobile-left,
+  .animate-sweep-mobile-right,
+  .animate-sweep-mobile-bottom-left,
+  .animate-deal-to-top,
+  .animate-deal-to-left,
+  .animate-deal-to-right,
+  .animate-deal-to-bottom,
   .animate-trick-win-glow,
+  .animate-float-pts,
   .animate-points-pop,
   .animate-riffle-left,
   .animate-riffle-right,

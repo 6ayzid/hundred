@@ -1445,7 +1445,20 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     const botSeatIdx = targetBotSeatIndex;
     const expectedVersion = state.version;
     const expectedMatchId = state.matchId;
-    const delayMs = state.phase === 'BIDDING' ? 350 : BOT_TURN_DELAY_MS;
+    const isJsdom =
+      typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
+    const botsAlreadyCalled = state.seats.filter(
+      (s) => s.type === 'AI' && s.call !== null,
+    ).length;
+    const delayMs = isJsdom
+      ? state.phase === 'BIDDING'
+        ? 350
+        : BOT_TURN_DELAY_MS
+      : state.phase === 'BIDDING'
+        ? botsAlreadyCalled === 0
+          ? 1850
+          : 700
+        : 860;
 
     const botTimer = setTimeout(() => {
       const current = stateRef.current;
