@@ -183,12 +183,31 @@ export function Lobby({
         } ${lowDataMode ? 'rain-paused' : ''}`}
       />
 
-      <main className="glass-pill relative z-10 flex w-full max-w-xl flex-col items-center gap-5 rounded-3xl p-5 text-center sm:p-8">
+      <main className="glass-pill relative z-10 flex w-full max-w-xl flex-col items-center gap-5 rounded-[32px] p-5 text-center sm:p-8">
+        {/* Cute twinkling corner stars */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="#ffc857"
+          className="animate-sparkle-twinkle pointer-events-none absolute left-5 top-5 h-5 w-5 opacity-80"
+        >
+          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+        </svg>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="#ff8fab"
+          className="animate-sparkle-twinkle pointer-events-none absolute right-6 top-6 h-4 w-4 opacity-75"
+          style={{ animationDelay: '0.9s' }}
+        >
+          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+        </svg>
+
         <header className="flex flex-col items-center">
-          <h1 className="font-bangla text-4xl font-extrabold tracking-tight text-[#faf3e6] sm:text-5xl">
-            হানডেট <span className="text-[#e0a943]">HUNDRED</span>
+          <h1 className="font-bangla text-4xl font-extrabold tracking-tight text-[#4a2e2b] sm:text-5xl">
+            হানডেট <span className="text-[#f25c84]">HUNDRED</span>
           </h1>
-          <p className="mt-1.5 text-xs font-medium text-[#d8c7ae] sm:text-sm">
+          <p className="mt-1.5 rounded-full bg-[#fff0ec] px-3.5 py-1 text-xs font-semibold text-[#875f5c] sm:text-sm">
             4 Players • 10 Rounds • Holder of 1 starts • Min Call 50
           </p>
         </header>
@@ -196,7 +215,7 @@ export function Lobby({
         {/* Fanned Visiting Cards Showcase */}
         <div
           aria-label="Handwritten visiting cards preview"
-          className="flex items-end justify-center py-1"
+          className="animate-cute-float flex items-end justify-center py-1"
         >
           {PREVIEW_CARDS.map((cardValue, idx) => {
             const offset = idx - 2;
@@ -222,21 +241,21 @@ export function Lobby({
         {activeRoomCode && !state ? (
           <div
             data-testid="joining-room-card"
-            className="animate-panel-enter flex w-full flex-col items-center gap-3 rounded-2xl border border-amber-300/25 bg-black/45 px-5 py-6 text-center"
+            className="animate-panel-enter flex w-full flex-col items-center gap-3 rounded-3xl border-2 border-[#f7c6d0] bg-[#fff7f3] px-5 py-6 text-center"
           >
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-amber-300/30 border-t-amber-300" />
+            <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-[#ffd6e0] border-t-[#f25c84]" />
             <div>
-              <p className="text-sm font-bold text-[#faf3e6]">
-                Joining room <span className="text-amber-300">{activeRoomCode}</span>…
+              <p className="text-sm font-bold text-[#4a2e2b]">
+                Joining room <span className="text-[#f25c84]">{activeRoomCode}</span>…
               </p>
-              <p className="mt-0.5 text-xs text-[#cbb89d]">
+              <p className="mt-0.5 text-xs text-[#875f5c]">
                 Checking availability with the room host
               </p>
             </div>
             <button
               type="button"
               onClick={onLeaveRoom}
-              className="mt-1 rounded-xl border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-semibold text-[#f0dfc2] transition hover:bg-white/20"
+              className="mt-1 rounded-full border border-[#f2c4cf] bg-white px-4 py-1.5 text-xs font-bold text-[#6e4946] transition hover:bg-[#fff0ec]"
             >
               Cancel
             </button>
@@ -247,7 +266,7 @@ export function Lobby({
               <div
                 role="status"
                 data-testid="lobby-notice"
-                className="animate-panel-enter flex items-center justify-between gap-2 rounded-xl border border-amber-400/45 bg-amber-950/65 px-3.5 py-2.5 text-xs font-medium text-amber-100"
+                className="animate-panel-enter flex items-center justify-between gap-2 rounded-2xl border border-[#ffc857] bg-[#fff6db] px-3.5 py-2.5 text-xs font-semibold text-[#6b4810]"
               >
                 <span>{roomNotice}</span>
                 {onDismissNotice && (
@@ -255,7 +274,7 @@ export function Lobby({
                     type="button"
                     onClick={onDismissNotice}
                     aria-label="Dismiss notice"
-                    className="shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-amber-300 hover:bg-white/10"
+                    className="shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold text-[#9c6712] hover:bg-[#ffe8a3]/50"
                   >
                     ✕
                   </button>
@@ -266,7 +285,7 @@ export function Lobby({
             <div>
               <label
                 htmlFor="nickname-input"
-                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#d8c7ae]"
+                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#875f5c]"
               >
                 Your Nickname
               </label>
@@ -281,7 +300,7 @@ export function Lobby({
                   if (formError) setFormError(null);
                 }}
                 placeholder="Enter your name (e.g. Rafiq)"
-                className="w-full rounded-xl border border-white/15 bg-black/45 px-4 py-3 text-sm font-semibold text-white placeholder:text-stone-400 focus:border-amber-400 focus:outline-none"
+                className="w-full rounded-2xl border-2 border-[#f4cbd5] bg-white px-4 py-3 text-sm font-semibold text-[#4a2e2b] placeholder:text-[#b89694] focus:border-[#ff7597] focus:outline-none"
               />
             </div>
 
@@ -290,7 +309,7 @@ export function Lobby({
                 type="button"
                 onClick={handleCreateRoom}
                 data-testid="create-room-btn"
-                className="flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-3 text-sm font-extrabold text-[#1b1108] transition hover:bg-amber-300 active:scale-[0.98]"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-[#ff7597] px-4 py-3 text-sm font-extrabold text-white shadow-[0_4px_0_#d94f72] transition hover:bg-[#ff6188] active:translate-y-[2px] active:shadow-[0_2px_0_#d94f72]"
               >
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 <span>Create Room</span>
@@ -307,12 +326,12 @@ export function Lobby({
                   placeholder="TNG-AB12"
                   aria-label="Room Code"
                   data-testid="join-room-input"
-                  className="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/45 px-3.5 py-3 text-sm font-bold uppercase tracking-wider text-white placeholder:text-stone-500 focus:border-amber-400 focus:outline-none"
+                  className="min-w-0 flex-1 rounded-2xl border-2 border-[#f4cbd5] bg-white px-3.5 py-3 text-sm font-bold uppercase tracking-wider text-[#4a2e2b] placeholder:text-[#b89694] focus:border-[#ff7597] focus:outline-none"
                 />
                 <button
                   type="submit"
                   data-testid="join-room-btn"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20 active:scale-[0.98]"
+                  className="inline-flex items-center gap-1.5 rounded-2xl border-2 border-[#f2c4cf] bg-[#fff0ec] px-4 py-3 text-sm font-bold text-[#6e3f45] shadow-[0_3px_0_#ecc0cb] transition hover:bg-[#ffe3e9] active:translate-y-[2px] active:shadow-[0_1px_0_#ecc0cb]"
                 >
                   <LogIn className="h-4 w-4" aria-hidden="true" />
                   <span>Join</span>
@@ -324,7 +343,7 @@ export function Lobby({
               <p
                 role="alert"
                 data-testid="lobby-error"
-                className="rounded-xl border border-red-400/40 bg-red-950/60 px-3.5 py-2.5 text-xs font-medium text-red-200"
+                className="rounded-2xl border border-[#f598b0] bg-[#fff0f4] px-3.5 py-2.5 text-xs font-semibold text-[#b83256]"
               >
                 {formError}
               </p>
@@ -336,19 +355,19 @@ export function Lobby({
             data-testid="room-lobby"
             className="animate-panel-enter w-full space-y-4 text-left"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/15 bg-black/40 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-3xl border-2 border-[#f5cbd4] bg-[#fff7f3] px-4 py-3">
               <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#cbb89d]">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#8c6460]">
                   Room Code
                 </span>
                 <div className="flex items-center gap-2">
                   <span
                     data-testid="lobby-room-code"
-                    className="text-xl font-black tracking-wider text-amber-300"
+                    className="text-xl font-black tracking-wider text-[#f25c84]"
                   >
                     {state.roomCode}
                   </span>
-                  <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#e6d5b8]">
+                  <span className="rounded-full border border-[#e8d5ff] bg-[#f4edff] px-2.5 py-0.5 text-[10px] font-bold text-[#6a52a3]">
                     {syncMode === 'supabase' ? 'Supabase Live' : 'Room Relay'}
                   </span>
                 </div>
@@ -359,7 +378,7 @@ export function Lobby({
                   type="button"
                   onClick={() => void copyInviteLink(state.roomCode)}
                   data-testid="copy-invite-btn"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300/45 bg-amber-400/15 px-3 py-2 text-xs font-bold text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108]"
+                  className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#ffccd8] bg-[#fff0f4] px-3 py-1.5 text-xs font-bold text-[#c73e65] transition hover:bg-[#ff7597] hover:text-white"
                 >
                   {copiedInviteUrl ? (
                     <>
@@ -378,7 +397,7 @@ export function Lobby({
                   type="button"
                   onClick={onLeaveRoom}
                   data-testid="lobby-leave-btn"
-                  className="inline-flex items-center gap-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-[#f0dfc2] hover:bg-white/20"
+                  className="inline-flex items-center gap-1 rounded-full border border-[#edd0d6] bg-white px-3 py-1.5 text-xs font-bold text-[#7d5a58] hover:bg-[#fff0ec]"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   <span>Leave</span>
@@ -387,8 +406,8 @@ export function Lobby({
             </div>
 
             {clipboardFallbackUrl && (
-              <div className="rounded-xl border border-amber-400/35 bg-black/50 p-2.5 text-xs text-amber-200">
-                <span className="block font-semibold">
+              <div className="rounded-2xl border border-[#ffd88a] bg-[#fff8e4] p-2.5 text-xs text-[#6b4810]">
+                <span className="block font-bold">
                   Share this invite URL:
                 </span>
                 <input
@@ -396,7 +415,7 @@ export function Lobby({
                   readOnly
                   value={clipboardFallbackUrl}
                   onFocus={(e) => e.currentTarget.select()}
-                  className="mt-1 w-full rounded border border-white/15 bg-black/60 px-2 py-1 font-mono text-[11px] text-white"
+                  className="mt-1 w-full rounded-xl border border-[#f2d699] bg-white px-2.5 py-1 font-mono text-[11px] text-[#4a2e2b]"
                 />
               </div>
             )}
@@ -410,24 +429,24 @@ export function Lobby({
                   <div
                     key={seat.seatIndex}
                     data-testid={`lobby-seat-${seat.seatIndex}`}
-                    className={`flex items-center justify-between rounded-2xl border px-3.5 py-2.5 transition ${
+                    className={`flex items-center justify-between rounded-3xl border-2 px-3.5 py-2.5 transition ${
                       seat.type === 'EMPTY'
-                        ? 'border-dashed border-white/20 bg-black/25'
-                        : 'border-white/15 bg-black/45'
+                        ? 'border-dashed border-[#eac4cd] bg-[#fff8f5]'
+                        : 'border-[#f4cbd5] bg-white shadow-sm'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       {seat.type === 'EMPTY' ? (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-white/25 bg-white/5 text-xs font-bold text-stone-400">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-[#e8bcc7] bg-[#fff0ec] text-xs font-bold text-[#a87e84]">
                           S{seat.seatIndex + 1}
                         </div>
                       ) : (
-                        <div className="h-10 w-10 overflow-hidden rounded-full ring-1 ring-white/25">
+                        <div className="h-10 w-10 overflow-hidden rounded-full ring-2 ring-[#ffe3ea]">
                           <SeatAvatarGraphic seat={seat} size={40} />
                         </div>
                       )}
                       <div>
-                        <div className="flex items-center gap-1.5 text-sm font-bold text-white">
+                        <div className="flex items-center gap-1.5 text-sm font-bold text-[#4a2e2b]">
                           <span>
                             {seat.type === 'EMPTY'
                               ? `Empty Seat ${seat.seatIndex + 1}`
@@ -435,12 +454,12 @@ export function Lobby({
                           </span>
                           {isHostSeat && (
                             <Crown
-                              className="h-3.5 w-3.5 text-amber-400"
+                              className="h-3.5 w-3.5 text-[#f59e0b]"
                               aria-label="Host"
                             />
                           )}
                         </div>
-                        <span className="text-[11px] text-[#cbb89d]">
+                        <span className="text-[11px] font-medium text-[#8c6460]">
                           {seat.type === 'AI'
                             ? 'AI Bot'
                             : seat.type === 'HUMAN'
@@ -466,7 +485,7 @@ export function Lobby({
                           })
                         }
                         data-testid={`add-bot-seat-${seat.seatIndex}`}
-                        className="inline-flex items-center gap-1 rounded-xl border border-amber-300/45 bg-amber-400/15 px-2.5 py-1.5 text-xs font-bold text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108]"
+                        className="inline-flex items-center gap-1 rounded-full border-2 border-[#ffd57e] bg-[#fff5d6] px-2.5 py-1 text-xs font-bold text-[#8a5808] transition hover:bg-[#ffc857] hover:text-[#4a2e2b]"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>Add Bot</span>
@@ -484,7 +503,7 @@ export function Lobby({
                         }
                         data-testid={`remove-bot-seat-${seat.seatIndex}`}
                         aria-label={`Remove bot ${seat.username}`}
-                        className="inline-flex items-center gap-1 rounded-xl border border-red-400/35 bg-red-500/15 px-2.5 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/30"
+                        className="inline-flex items-center gap-1 rounded-full border border-[#f8b4c4] bg-[#fff0f4] px-2.5 py-1 text-xs font-bold text-[#c73e65] transition hover:bg-[#ffdce5]"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         <span>Remove</span>
@@ -505,7 +524,7 @@ export function Lobby({
                       onDispatchAction({ type: 'FILL_BOTS_AND_START' });
                     }}
                     data-testid="fill-bots-start-btn"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] transition hover:bg-amber-300 active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-[#ffc857] px-5 py-2.5 text-sm font-extrabold text-[#4a2e2b] shadow-[0_4px_0_#d99c26] transition hover:bg-[#ffbe3b] active:translate-y-[2px] active:shadow-[0_2px_0_#d99c26]"
                   >
                     <Bot className="h-4 w-4" />
                     <span>Fill Bots &amp; Start</span>
@@ -520,10 +539,10 @@ export function Lobby({
                     onDispatchAction({ type: 'START_MATCH' });
                   }}
                   data-testid="start-match-btn"
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-extrabold transition ${
+                  className={`inline-flex items-center gap-1.5 rounded-2xl px-5 py-2.5 text-sm font-extrabold transition ${
                     allSeatsFilled
-                      ? 'bg-emerald-500 text-[#052e16] hover:bg-emerald-400 active:scale-[0.98]'
-                      : 'cursor-not-allowed border border-white/15 bg-white/5 text-stone-500'
+                      ? 'bg-[#52b788] text-white shadow-[0_4px_0_#368c64] hover:bg-[#40a878] active:translate-y-[2px] active:shadow-[0_2px_0_#368c64]'
+                      : 'cursor-not-allowed border-2 border-[#ebd5da] bg-[#faf2f4] text-[#b89a9e]'
                   }`}
                 >
                   <Play className="h-4 w-4" />
@@ -533,9 +552,9 @@ export function Lobby({
             ) : (
               <div
                 data-testid="waiting-for-host-banner"
-                className="flex items-center justify-center gap-2 rounded-xl border border-amber-300/20 bg-black/35 px-4 py-2.5 text-xs font-semibold text-[#e6d5b8]"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-[#ffd88a] bg-[#fff8e4] px-4 py-2.5 text-xs font-bold text-[#7a5010]"
               >
-                <Crown className="h-3.5 w-3.5 text-amber-400" />
+                <Crown className="h-3.5 w-3.5 text-[#f59e0b]" />
                 <span>Waiting for {hostDisplayName} to start the match…</span>
               </div>
             )}
@@ -561,9 +580,9 @@ export function Lobby({
         {!cloudReady && (
           <div
             aria-label="Environment readiness"
-            className="w-full rounded-2xl border border-white/12 bg-black/35 px-4 py-2.5 text-left text-[11px] text-[#cbb89d]"
+            className="w-full rounded-2xl border border-[#f2d2d9] bg-[#fff8f5] px-4 py-2.5 text-left text-[11px] text-[#7d5a58]"
           >
-            <strong className="text-amber-300">Setup Tip:</strong> Add Supabase
+            <strong className="text-[#d94f72]">Setup Tip:</strong> Add Supabase
             &amp; LiveKit keys in Vercel Environment Variables (see{' '}
             <code>.env.example</code>) for persistent cross-region Realtime sync
             &amp; live voice mic. Room Relay &amp; SFX work out of the box.

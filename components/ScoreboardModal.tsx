@@ -23,19 +23,19 @@ export function ScoreboardModal({
       aria-modal="true"
       aria-label="Full Scoreboard"
       data-testid="scoreboard-modal"
-      className="animate-panel-enter fixed inset-0 z-50 flex flex-col bg-[#120c08]/98 text-[#faf3e6] backdrop-blur-md"
+      className="pati-table-surface animate-panel-enter fixed inset-0 z-50 flex flex-col text-[#4a2e2b]"
     >
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/12 bg-[#1a110b] px-4 py-3.5 sm:px-8">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#f4cbd5] bg-[#fffaf6]/95 px-4 py-3.5 backdrop-blur-md sm:px-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-300/35 bg-amber-400/15 text-amber-300">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border-2 border-[#ffd88a] bg-[#fff5d6] text-[#e69500]">
             <Trophy className="h-5 w-5" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="font-bangla text-xl font-extrabold leading-tight text-[#faf3e6] sm:text-2xl">
+            <h2 className="font-bangla text-xl font-extrabold leading-tight text-[#4a2e2b] sm:text-2xl">
               স্কোরবোর্ড — হানডেট{' '}
-              <span className="text-[#e0a943]">HUNDRED</span>
+              <span className="text-[#f25c84]">HUNDRED</span>
             </h2>
-            <p className="text-xs font-medium text-[#d7c4a3]">
+            <p className="text-xs font-semibold text-[#8c6460]">
               Round {state.round} of {TOTAL_ROUNDS} • Room {state.roomCode}
             </p>
           </div>
@@ -45,7 +45,7 @@ export function ScoreboardModal({
           type="button"
           onClick={onClose}
           data-testid="back-to-table-btn"
-          className="inline-flex items-center gap-2 rounded-full bg-amber-400 px-4 py-2 text-xs font-extrabold text-[#1b1108] transition hover:bg-amber-300 sm:text-sm"
+          className="inline-flex items-center gap-2 rounded-full bg-[#ff7597] px-4 py-2 text-xs font-extrabold text-white shadow-[0_3px_0_#d94f72] transition hover:bg-[#ff6188] active:translate-y-[1px] active:shadow-[0_1px_0_#d94f72] sm:text-sm"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           <span>Back to Table</span>
@@ -64,12 +64,12 @@ export function ScoreboardModal({
                     : rankIdx + 1;
                 const rankStyle =
                   rank === 1
-                    ? 'bg-amber-400 text-[#1b1108] ring-amber-300/60'
+                    ? 'bg-[#ffc857] text-[#5e3a16] ring-[#ffe8a3]'
                     : rank === 2
-                      ? 'bg-slate-200 text-slate-900 ring-white/40'
+                      ? 'bg-[#e6ecff] text-[#3a4f8a] ring-[#cbd8ff]'
                       : rank === 3
-                        ? 'bg-amber-700 text-amber-50 ring-amber-500/40'
-                        : 'bg-white/10 text-[#cbb89d] ring-white/15';
+                        ? 'bg-[#ffe2d1] text-[#8c4a26] ring-[#f7c4a8]'
+                        : 'bg-[#f8eaee] text-[#8c6460] ring-[#efd4dc]';
                 const hideCall =
                   state.phase === 'BIDDING' && seat.seatIndex !== mySeatIndex;
                 const callDisplay =
@@ -78,26 +78,26 @@ export function ScoreboardModal({
                   <div
                     key={seat.seatIndex}
                     data-testid={`scoreboard-rank-${rank}`}
-                    className={`glass-pill relative flex items-center gap-3 rounded-2xl p-3.5 ${
-                      rank === 1 ? 'ring-1 ring-amber-400/50' : ''
+                    className={`glass-pill relative flex items-center gap-3 rounded-3xl p-3.5 ${
+                      rank === 1 ? 'ring-2 ring-[#ffc857]' : ''
                     }`}
                   >
                     <span
-                      className={`absolute right-2.5 top-2.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ring-1 ${rankStyle}`}
+                      className={`absolute right-2.5 top-2.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-black ring-2 ${rankStyle}`}
                     >
                       #{rank}
                     </span>
-                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-white/25">
+                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-2 ring-[#ffe3ea]">
                       <SeatAvatarGraphic seat={seat} size={44} />
                     </div>
                     <div className="min-w-0 pr-5">
-                      <div className="truncate text-sm font-bold text-white">
+                      <div className="truncate text-sm font-bold text-[#4a2e2b]">
                         {seat.username}
                       </div>
-                      <div className="text-xl font-black text-amber-300">
+                      <div className="text-xl font-black text-[#f25c84]">
                         {seat.totalScore}
                       </div>
-                      <div className="text-[11px] text-[#cbb89d]">
+                      <div className="text-[11px] font-semibold text-[#8c6460]">
                         Call: {callDisplay}
                       </div>
                     </div>
@@ -106,19 +106,19 @@ export function ScoreboardModal({
               })}
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-white/15 bg-[#17100a]">
+          <div className="glass-pill overflow-x-auto rounded-3xl">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-white/15 bg-white/5 text-[#e6d5b8]">
-                  <th className="px-4 py-3 font-bold uppercase tracking-wider text-amber-300">
+                <tr className="border-b-2 border-[#f4d4dc] bg-[#fff5f7] text-[#6e4946]">
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-wider text-[#d94f72]">
                     Round
                   </th>
                   {state.seats.map((seat) => (
                     <th key={seat.seatIndex} className="px-4 py-3">
-                      <div className="font-bold text-white">
+                      <div className="font-bold text-[#4a2e2b]">
                         {seat.username}
                       </div>
-                      <div className="text-[10px] font-normal text-[#cbb89d]">
+                      <div className="text-[10px] font-semibold text-[#9e7774]">
                         Call / Won / Total
                       </div>
                     </th>
@@ -135,11 +135,11 @@ export function ScoreboardModal({
                   return (
                     <tr
                       key={roundNum}
-                      className={`border-b border-white/8 ${
-                        isCurrent ? 'bg-amber-400/10' : ''
+                      className={`border-b border-[#f8e4e9] last:border-b-0 ${
+                        isCurrent ? 'bg-[#fff8e0]/75' : 'bg-white/60'
                       }`}
                     >
-                      <td className="px-4 py-2.5 font-bold text-amber-300">
+                      <td className="px-4 py-2.5 font-extrabold text-[#d94f72]">
                         R{roundNum}
                       </td>
                       {state.seats.map((seat) => {
@@ -150,7 +150,7 @@ export function ScoreboardModal({
                           return (
                             <td
                               key={seat.seatIndex}
-                              className="px-4 py-2.5 text-[#7a6852]"
+                              className="px-4 py-2.5 text-[#c9a8ad]"
                             >
                               —
                             </td>
@@ -159,19 +159,19 @@ export function ScoreboardModal({
                         const hit = entry.capturedPoints >= entry.call;
                         return (
                           <td key={seat.seatIndex} className="px-4 py-2.5">
-                            <span className="font-semibold text-amber-200">
+                            <span className="font-bold text-[#c47d10]">
                               {entry.call}
                             </span>
-                            <span className="mx-1 text-white/25">/</span>
+                            <span className="mx-1 text-[#d9b8bf]">/</span>
                             <span
-                              className={`font-bold ${
-                                hit ? 'text-emerald-400' : 'text-red-400'
+                              className={`font-extrabold ${
+                                hit ? 'text-[#289664]' : 'text-[#d94f72]'
                               }`}
                             >
                               {entry.capturedPoints}
                             </span>
-                            <span className="mx-1 text-white/25">/</span>
-                            <span className="font-extrabold text-white">
+                            <span className="mx-1 text-[#d9b8bf]">/</span>
+                            <span className="font-black text-[#4a2e2b]">
                               {entry.totalAfter}
                             </span>
                           </td>

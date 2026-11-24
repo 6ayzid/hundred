@@ -1226,7 +1226,17 @@ export function computeBotCall(
       higherOutsideCount < WIN_PROBABILITY_BY_HIGHER_OUTSIDE.length
         ? WIN_PROBABILITY_BY_HIGHER_OUTSIDE[higherOutsideCount]
         : 0;
-    expectedTotal += winProb * (card + 80);
+    // A won trick pays the winning card plus 3 other cards (~105 avg).
+    expectedTotal += winProb * (card + 105);
+  }
+
+  // Holding 1 gives Trick 1 lead control; multiple high cards (80+) improve tempo.
+  if (handSet.has(1)) {
+    expectedTotal += 8;
+  }
+  const highCardCount = validHand.filter((c) => c >= 80).length;
+  if (highCardCount >= 2) {
+    expectedTotal += (highCardCount - 1) * 10;
   }
 
   const validCalls = Array.isArray(existingCalls)
@@ -1245,7 +1255,8 @@ export function computeBotCall(
     }
   }
 
-  const buffered = expectedTotal * 0.85;
+  // Slight conservative buffer so bots hit their call reliably.
+  const buffered = expectedTotal * 0.88;
   const rounded = Math.round(buffered / CALL_STEP) * CALL_STEP;
   const clamped = Math.max(MIN_CALL, Math.min(MAX_CALL, rounded));
   return clamped === 0 ? 0 : clamped;
@@ -1272,19 +1283,30 @@ export function computeBotCard(state: GameState, seatIndex: SeatIndex): CardValu
 
   const targetCall = seat.call ?? 0;
   const needed = Math.max(0, targetCall - seat.capturedPoints);
+  const currentTrick = Array.isArray(state.currentTrick) ? state.currentTrick : [];
 
+  // Call already satisfied: dump the highest safe under-card when following, or lowest when leading.
   if (needed === 0) {
+    if (currentTrick.length > 0) {
+      const currentMax = Math.max(...currentTrick.map((play) => play.card));
+      const underCards = sorted.filter((card) => card < currentMax);
+      if (underCards.length > 0) {
+        return underCards[underCards.length - 1];
+      }
+    }
     return sorted[0];
   }
 
-  const currentTrick = Array.isArray(state.currentTrick) ? state.currentTrick : [];
-
+  // Leading a trick
   if (currentTrick.length === 0) {
     const highest = sorted[sorted.length - 1];
+    if (highest === 100 && (needed <= 130 || sorted.length <= 3)) {
+      return highest;
+    }
     if (highest >= 90 && (needed >= 80 || sorted.length <= 2)) {
       return highest;
     }
-    if (highest >= 75 && state.trickNumber >= 4) {
+    if (highest >= 75 && state.trickNumber >= 3) {
       return highest;
     }
     return sorted[0];
@@ -1294,20 +1316,36 @@ export function computeBotCard(state: GameState, seatIndex: SeatIndex): CardValu
   const currentPot = getTrickPoints(currentTrick);
   const winners = sorted.filter((card) => card > currentMax);
 
+  // Cannot win this trick: dump the lowest card to avoid feeding points.
   if (winners.length === 0) {
     return sorted[0];
   }
 
+  const cheapestWinner = winners[0];
+
+  // Last to play in the trick: guaranteed win if we beat currentMax.
   if (currentTrick.length === 3) {
-    return winners[0];
+    if (currentPot + cheapestWinner >= needed) {
+      return cheapestWinner;
+    }
+    // Avoid burning a 95/100 on a tiny pot early if we still have multiple tricks left.
+    if (cheapestWinner >= 95 && currentPot < 35 && sorted.length >= 3 && needed > 140) {
+      return sorted[0];
+    }
+    return cheapestWinner;
   }
 
-  if (winners[winners.length - 1] === 100 && currentPot >= 130) {
+  // Middle seats (2nd or 3rd to play)
+  if (currentPot + cheapestWinner >= needed) {
+    return cheapestWinner;
+  }
+
+  if (winners[winners.length - 1] === 100 && (currentPot >= 95 || state.trickNumber >= 4)) {
     return 100;
   }
 
-  if (winners[0] >= 75 || currentPot >= 70 || state.trickNumber >= 4) {
-    return winners[0];
+  if (cheapestWinner >= 75 || currentPot >= 55 || state.trickNumber >= 4) {
+    return cheapestWinner;
   }
 
   return sorted[0];

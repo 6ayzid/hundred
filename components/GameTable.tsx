@@ -57,7 +57,7 @@ import {
 } from '@/lib/types';
 
 /**
- * Handcrafted pure-SVG Bangladeshi village hurricane lantern (kupibati) — < 1 KB, zero image bloat.
+ * Handcrafted pure-SVG kawaii smiling hurricane lantern (kupibati) — < 1.2 KB, zero image bloat.
  */
 function KupibatiLantern({ paused }: { paused: boolean }) {
   return (
@@ -65,55 +65,66 @@ function KupibatiLantern({ paused }: { paused: boolean }) {
       aria-hidden="true"
       className="pointer-events-none relative flex items-center justify-center"
     >
-      {/* Soft warm amber glow halo */}
+      {/* Soft warm honey-peach glow halo */}
       <div
-        className={`absolute h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(255,196,86,0.42)_0%,rgba(232,140,36,0.14)_45%,transparent_72%)] ${
+        className={`absolute h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(255,224,132,0.58)_0%,rgba(255,186,162,0.22)_46%,transparent_72%)] ${
           paused ? '' : 'animate-lantern-flicker'
         }`}
       />
       <svg
-        width="54"
-        height="72"
-        viewBox="0 0 54 72"
+        width="56"
+        height="74"
+        viewBox="0 0 56 74"
         fill="none"
-        className="relative drop-shadow-[0_8px_14px_rgba(0,0,0,0.6)]"
+        className={`relative drop-shadow-[0_6px_12px_rgba(166,104,108,0.28)] ${
+          paused ? '' : 'animate-cute-float'
+        }`}
       >
-        {/* Top ring handle */}
-        <circle cx="27" cy="6" r="4" stroke="#b9823c" strokeWidth="2" />
-        {/* Brass hood */}
-        <path d="M18 15C19 10.5 22.5 9 27 9C31.5 9 35 10.5 36 15H18Z" fill="#7d5324" stroke="#d49b4a" strokeWidth="1.2" />
-        <rect x="15" y="15" width="24" height="3.5" rx="1.75" fill="#9c6b2f" />
-        {/* Side wire guards */}
-        <path d="M17 18.5C11 26 11 40 16 49" stroke="#9e6d31" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M37 18.5C43 26 43 40 38 49" stroke="#9e6d31" strokeWidth="1.5" strokeLinecap="round" />
-        {/* Curved glass globe */}
+        {/* Little floating sparkles */}
         <path
-          d="M18 18.5H36C39 26 39 39 35.5 48.5H18.5C15 39 15 26 18 18.5Z"
-          fill="url(#kupibatiGlass)"
-          stroke="#f3cf82"
-          strokeOpacity="0.55"
-          strokeWidth="1.2"
+          d="M7 22L8.3 25L11.3 26.3L8.3 27.6L7 30.6L5.7 27.6L2.7 26.3L5.7 25L7 22Z"
+          fill="#ffc857"
+          className={paused ? '' : 'animate-sparkle-twinkle'}
         />
-        {/* Flickering inner flame */}
-        <g className={paused ? '' : 'animate-lantern-flicker'} style={{ transformOrigin: '27px 40px' }}>
-          <path
-            d="M27 25C30.5 31 32 35.5 31 39.5C30.2 42.5 28.8 43.5 27 43.5C25.2 43.5 23.8 42.5 23 39.5C22 35.5 23.5 31 27 25Z"
-            fill="#ffb830"
-          />
-          <path
-            d="M27 30.5C29 34 29.6 37 29 39.5C28.6 41.2 27.9 42 27 42C26.1 42 25.4 41.2 25 39.5C24.4 37 25 34 27 30.5Z"
-            fill="#fff5c2"
-          />
+        <path
+          d="M49 16L50 18.4L52.4 19.4L50 20.4L49 22.8L48 20.4L45.6 19.4L48 18.4L49 16Z"
+          fill="#ff8fab"
+          className={paused ? '' : 'animate-sparkle-twinkle'}
+          style={{ animationDelay: '0.8s' }}
+        />
+        {/* Top ring handle */}
+        <circle cx="28" cy="7" r="4" stroke="#f0a84c" strokeWidth="2.2" />
+        {/* Pastel strawberry-peach hood */}
+        <path d="M18 16C19.5 11 23 9.5 28 9.5C33 9.5 36.5 11 38 16H18Z" fill="#ff8fab" stroke="#fff8f2" strokeWidth="1.5" />
+        <rect x="15" y="15.5" width="26" height="4" rx="2" fill="#ffc857" stroke="#fff8f2" strokeWidth="1.2" />
+        {/* Side wire guards */}
+        <path d="M17 19.5C11 27 11 41 16 50" stroke="#f0a84c" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M39 19.5C45 27 45 41 40 50" stroke="#f0a84c" strokeWidth="1.8" strokeLinecap="round" />
+        {/* Chubby glass globe */}
+        <path
+          d="M18 19.5H38C41.5 27 41.5 40 37.5 49.5H18.5C14.5 40 14.5 27 18 19.5Z"
+          fill="url(#kupibatiGlass)"
+          stroke="#fff8f0"
+          strokeWidth="1.8"
+        />
+        {/* Warm inner flame glow */}
+        <g className={paused ? '' : 'animate-lantern-flicker'} style={{ transformOrigin: '28px 36px' }}>
+          <circle cx="28" cy="34" r="7.5" fill="#fff3b0" fillOpacity="0.85" />
         </g>
-        {/* Wick holder & brass oil base */}
-        <rect x="23" y="44" width="8" height="4.5" rx="1" fill="#5e3b17" />
-        <path d="M14 48.5H40L43 60C43 62.5 40.8 64 38.5 64H15.5C13.2 64 11 62.5 11 60L14 48.5Z" fill="#70471e" stroke="#c98e3d" strokeWidth="1.3" />
-        <rect x="10" y="62.5" width="34" height="4.5" rx="2.25" fill="#4f3114" stroke="#b37b31" strokeWidth="1" />
+        {/* Kawaii happy closed eyes ^ ^ + rosy cheeks + tiny smile */}
+        <path d="M21.5 34.5Q23.5 32 25.5 34.5" stroke="#5e3a34" strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M30.5 34.5Q32.5 32 34.5 34.5" stroke="#5e3a34" strokeWidth="1.6" strokeLinecap="round" />
+        <ellipse cx="20.5" cy="37.5" rx="2.3" ry="1.3" fill="#ff8fab" fillOpacity="0.7" />
+        <ellipse cx="35.5" cy="37.5" rx="2.3" ry="1.3" fill="#ff8fab" fillOpacity="0.7" />
+        <path d="M26 37.5Q28 39.5 30 37.5" stroke="#5e3a34" strokeWidth="1.4" strokeLinecap="round" />
+        {/* Pastel strawberry base */}
+        <path d="M15 49.5H41L44 60C44 62.5 41.8 64.5 39 64.5H17C14.2 64.5 12 62.5 12 60L15 49.5Z" fill="#ff8fab" stroke="#fff8f2" strokeWidth="1.6" />
+        <rect x="11" y="63" width="34" height="5" rx="2.5" fill="#ffc857" stroke="#fff8f2" strokeWidth="1.3" />
         <defs>
-          <radialGradient id="kupibatiGlass" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(27 35) rotate(90) scale(16 12)">
-            <stop stopColor="#ffe799" stopOpacity="0.65" />
-            <stop offset="0.65" stopColor="#e89428" stopOpacity="0.28" />
-            <stop offset="1" stopColor="#5a2e0c" stopOpacity="0.45" />
+          <radialGradient id="kupibatiGlass" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(28 34) rotate(90) scale(16 13)">
+            <stop stopColor="#fffbe0" stopOpacity="0.95" />
+            <stop offset="0.65" stopColor="#ffe18c" stopOpacity="0.82" />
+            <stop offset="1" stopColor="#ffbe76" stopOpacity="0.75" />
           </radialGradient>
         </defs>
       </svg>
@@ -639,48 +650,48 @@ export function GameTable({
     <div
       aria-label={`Active turn: ${activeSeatObj.username}`}
       data-testid={compact ? undefined : 'turn-compass'}
-      className={`relative flex items-center justify-center rounded-full border border-amber-300/45 bg-black/25 ${
+      className={`relative flex items-center justify-center rounded-full border-2 border-[#fff8f2] bg-[#fffaf5]/85 shadow-sm ${
         compact ? 'h-9 w-9 sm:h-10 sm:w-10' : 'h-14 w-14 lg:h-16 lg:w-16'
       }`}
     >
       <ArrowUp
         className={`absolute top-0.5 transition-all duration-200 ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'top'
-            ? 'scale-110 text-amber-300'
-            : 'text-amber-100/20'
+            ? 'scale-115 text-[#f25c84]'
+            : 'text-[#d4b0b8]/55'
         }`}
       />
       <ArrowLeft
         className={`absolute left-0.5 transition-all duration-200 ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'left'
-            ? 'scale-110 text-amber-300'
-            : 'text-amber-100/20'
+            ? 'scale-115 text-[#f25c84]'
+            : 'text-[#d4b0b8]/55'
         }`}
       />
       <ArrowRight
         className={`absolute right-0.5 transition-all duration-200 ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'right'
-            ? 'scale-110 text-amber-300'
-            : 'text-amber-100/20'
+            ? 'scale-115 text-[#f25c84]'
+            : 'text-[#d4b0b8]/55'
         }`}
       />
       <ArrowDown
         className={`absolute bottom-0.5 transition-all duration-200 ${compact ? 'h-3 w-3' : 'h-4 w-4'} ${
           activeDirection === 'bottom-left'
-            ? 'scale-110 text-amber-300'
-            : 'text-amber-100/20'
+            ? 'scale-115 text-[#f25c84]'
+            : 'text-[#d4b0b8]/55'
         }`}
       />
-      <span className="h-1.5 w-1.5 rounded-full bg-amber-300/85" />
+      <span className="h-2 w-2 rounded-full bg-[#ffc857] ring-2 ring-[#fff8f0]" />
     </div>
   );
 
   const biddingCard = (
     <div
       data-testid="bidding-tray"
-      className="glass-pill animate-panel-enter w-full max-w-[360px] rounded-2xl border-amber-300/35 p-4 text-center shadow-2xl"
+      className="glass-pill animate-panel-enter w-full max-w-[360px] rounded-[28px] border-2 border-[#f7c0ce] p-4 text-center shadow-xl"
     >
-      <div className="flex items-center justify-between gap-2 text-xs font-bold tracking-wide text-amber-200 sm:text-sm">
+      <div className="flex items-center justify-between gap-2 text-xs font-extrabold tracking-wide text-[#d94f72] sm:text-sm">
         <span className="mx-auto">
           {canPlaceCall
             ? 'Declare Your Call (50 – 500)'
@@ -699,10 +710,10 @@ export function GameTable({
                 type="button"
                 onClick={() => submitCall(val)}
                 data-testid={`quick-call-${val}`}
-                className={`rounded-xl border py-1.5 text-xs font-bold transition active:scale-95 sm:text-sm ${
+                className={`rounded-2xl border-2 py-1.5 text-xs font-extrabold transition active:scale-95 sm:text-sm ${
                   selectedCall === val
-                    ? 'border-amber-300 bg-amber-400 text-[#1b1108]'
-                    : 'border-white/15 bg-white/10 text-[#faf3e6] hover:bg-amber-400 hover:text-[#1b1108]'
+                    ? 'border-[#ff7597] bg-[#ff7597] text-white shadow-[0_2px_0_#d94f72]'
+                    : 'border-[#f5d0da] bg-white text-[#5c3d3a] hover:border-[#ff8fab] hover:bg-[#fff0f4] hover:text-[#d94f72]'
                 }`}
               >
                 {val}
@@ -710,7 +721,7 @@ export function GameTable({
             ))}
           </div>
 
-          <div className="space-y-2 rounded-xl border border-white/10 bg-black/35 px-3 py-2.5">
+          <div className="space-y-2 rounded-2xl border border-[#f5d4dc] bg-[#fff7f3] px-3 py-2.5">
             <input
               type="range"
               min={MIN_CALL}
@@ -719,7 +730,7 @@ export function GameTable({
               value={selectedCall}
               onChange={(e) => setSelectedCall(Number(e.target.value))}
               aria-label="Call amount slider"
-              className="w-full accent-amber-400"
+              className="w-full accent-[#ff7597]"
             />
             <div className="flex items-center justify-between gap-2">
               <button
@@ -728,12 +739,12 @@ export function GameTable({
                   setSelectedCall((c) => Math.max(MIN_CALL, c - CALL_STEP))
                 }
                 aria-label="Decrease call by 10"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-amber-200 transition hover:bg-white/20 active:scale-95"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#f3c6d1] bg-white text-[#d94f72] transition hover:bg-[#fff0f4] active:scale-95"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
 
-              <span className="text-lg font-extrabold tabular-nums text-white">
+              <span className="text-lg font-extrabold tabular-nums text-[#4a2e2b]">
                 {selectedCall}
               </span>
 
@@ -743,7 +754,7 @@ export function GameTable({
                   setSelectedCall((c) => Math.min(MAX_CALL, c + CALL_STEP))
                 }
                 aria-label="Increase call by 10"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-amber-200 transition hover:bg-white/20 active:scale-95"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#f3c6d1] bg-white text-[#d94f72] transition hover:bg-[#fff0f4] active:scale-95"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -752,19 +763,19 @@ export function GameTable({
                 type="button"
                 onClick={() => submitCall(selectedCall)}
                 data-testid="submit-custom-call"
-                className="ml-1 flex-1 rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-extrabold text-[#1b1108] transition hover:bg-amber-300 active:scale-95 sm:text-sm"
+                className="ml-1 flex-1 rounded-xl bg-[#ff7597] px-3 py-1.5 text-xs font-extrabold text-white shadow-[0_3px_0_#d94f72] transition hover:bg-[#ff6188] active:translate-y-[1px] active:shadow-[0_1px_0_#d94f72] sm:text-sm"
               >
                 Confirm
               </button>
             </div>
           </div>
 
-          <p className="text-[11px] font-medium text-[#d8c7ae]">
+          <p className="text-[11px] font-semibold text-[#8c6460]">
             All players call simultaneously ({calledCount}/4 locked)
           </p>
         </div>
       ) : (
-        <p className="mt-2 text-xs font-medium text-[#d8c7ae]">
+        <p className="mt-2 text-xs font-semibold text-[#8c6460]">
           Waiting for other players to lock their call ({calledCount}/4)…
         </p>
       )}
@@ -779,7 +790,7 @@ export function GameTable({
       onPointerDown={() => unlockAudio()}
       className="bg-tabletop-photo fixed inset-0 flex h-dvh w-full flex-col overflow-hidden select-none"
     >
-      {/* Subtle rain streaks along edges */}
+      {/* Subtle pastel rain streaks along edges */}
       <div
         aria-hidden="true"
         data-testid="rain-overlay"
@@ -793,17 +804,17 @@ export function GameTable({
       <header className="relative z-30 flex shrink-0 items-center justify-between gap-1 px-2 py-2 sm:gap-2 sm:px-3 sm:py-2.5 md:px-6 md:py-3">
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-2 md:gap-4">
           <div className="flex shrink-0 flex-col leading-none">
-            <h1 className="font-bangla text-lg font-extrabold tracking-tight text-[#faf3e6] sm:text-xl md:text-3xl">
+            <h1 className="font-bangla text-lg font-extrabold tracking-tight text-[#4a2e2b] sm:text-xl md:text-3xl">
               হানডেট
             </h1>
-            <span className="text-[9px] font-bold tracking-[0.16em] text-[#e0a943] sm:text-[10px] md:text-xs">
+            <span className="text-[9px] font-extrabold tracking-[0.16em] text-[#f25c84] sm:text-[10px] md:text-xs">
               HUNDRED
             </span>
           </div>
 
           <span
             data-testid="arena-status-pill"
-            className="glass-pill whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold text-[#faf3e6] sm:px-2.5 sm:py-1 sm:text-[11px] md:px-3.5 md:py-1.5 md:text-xs"
+            className="glass-pill whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10px] font-bold text-[#4a2e2b] sm:px-3 sm:py-1 sm:text-[11px] md:px-3.5 md:py-1.5 md:text-xs"
           >
             Round {state.round}/{TOTAL_ROUNDS}
           </span>
@@ -824,12 +835,12 @@ export function GameTable({
             aria-label={sfxMuted ? 'Unmute sound effects' : 'Mute sound effects'}
             title={sfxMuted ? 'Sound OFF' : 'Sound ON'}
             data-testid="sfx-toggle-btn"
-            className="glass-pill inline-flex h-7 w-7 items-center justify-center rounded-full text-[#e8d9c0] transition hover:text-amber-300 sm:h-8 sm:w-8 md:h-9 md:w-9"
+            className="glass-pill inline-flex h-7 w-7 items-center justify-center rounded-full text-[#7d5a58] transition hover:text-[#f25c84] sm:h-8 sm:w-8 md:h-9 md:w-9"
           >
             {sfxMuted ? (
               <VolumeX className="h-3.5 w-3.5 opacity-60 md:h-4 md:w-4" />
             ) : (
-              <Volume2 className="h-3.5 w-3.5 text-amber-300 md:h-4 md:w-4" />
+              <Volume2 className="h-3.5 w-3.5 text-[#f25c84] md:h-4 md:w-4" />
             )}
           </button>
 
@@ -837,7 +848,7 @@ export function GameTable({
             type="button"
             onClick={() => setScoreboardOpen(true)}
             data-testid="scoreboard-btn"
-            className="glass-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 font-bangla text-[11px] font-bold text-[#faf3e6] transition hover:border-amber-300/50 hover:text-amber-200 sm:px-3 sm:py-1.5 sm:text-xs md:px-4 md:text-sm"
+            className="glass-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 font-bangla text-[11px] font-bold text-[#4a2e2b] transition hover:border-[#ff8fab] hover:text-[#d94f72] sm:px-3 sm:py-1.5 sm:text-xs md:px-4 md:text-sm"
           >
             <span>স্কোরবোর্ড</span>
           </button>
@@ -848,7 +859,7 @@ export function GameTable({
             data-testid="leave-room-btn"
             title="Leave Room"
             aria-label="Leave Room"
-            className="glass-pill inline-flex h-7 w-7 items-center justify-center rounded-full text-[#f0dfc2] transition hover:border-red-400/50 hover:text-red-200 sm:h-8 sm:w-8 md:h-9 md:w-9"
+            className="glass-pill inline-flex h-7 w-7 items-center justify-center rounded-full text-[#7d5a58] transition hover:border-[#f25c84] hover:text-[#d94f72] sm:h-8 sm:w-8 md:h-9 md:w-9"
           >
             <LogOut className="h-3.5 w-3.5 md:h-4 md:w-4" aria-hidden="true" />
           </button>
@@ -991,9 +1002,9 @@ export function GameTable({
                   sweepPhase === 'highlight' && (
                     <div
                       aria-live="polite"
-                      className="animate-float-pts pointer-events-none absolute -top-9 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-300/50 bg-[#1a110a]/90 px-3 py-1 text-xs font-extrabold text-amber-200 shadow-lg"
+                      className="animate-float-pts pointer-events-none absolute -top-9 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-[#ffc857] bg-[#fff9e6] px-3 py-1 text-xs font-extrabold text-[#b86b00] shadow-md"
                     >
-                      +{state.lastTrickPoints}
+                      ✨ +{state.lastTrickPoints}
                     </div>
                   )}
 
@@ -1017,7 +1028,7 @@ export function GameTable({
           {/* Subtle Calm Active-Turn Cue above Hand */}
           {activeTurnHint && (
             <div className="animate-panel-enter pointer-events-none absolute bottom-[188px] left-1/2 z-20 -translate-x-1/2 lg:bottom-[204px]">
-              <span className="glass-pill rounded-full border-amber-300/35 px-3 py-1 text-[11px] font-semibold tracking-wide text-amber-200">
+              <span className="glass-pill rounded-full !border-[#ff8fab] !bg-[#fff5f7] px-3.5 py-1 text-[11px] font-bold tracking-wide text-[#c73e65]">
                 {activeTurnHint}
               </span>
             </div>
@@ -1164,9 +1175,9 @@ export function GameTable({
                     sweepPhase === 'highlight' && (
                       <div
                         aria-live="polite"
-                        className="animate-float-pts pointer-events-none absolute -top-7 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-300/50 bg-[#1a110a]/90 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-200 shadow-lg"
+                        className="animate-float-pts pointer-events-none absolute -top-7 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-[#ffc857] bg-[#fff9e6] px-2.5 py-0.5 text-[11px] font-extrabold text-[#b86b00] shadow-md"
                       >
-                        +{state.lastTrickPoints}
+                        ✨ +{state.lastTrickPoints}
                       </div>
                     )}
 
@@ -1218,7 +1229,7 @@ export function GameTable({
 
             {/* Mobile Transient Bidding Overlay (appears AFTER deal settles) */}
             {state.phase === 'BIDDING' && !isDealingSequence && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 p-3 backdrop-blur-[2px]">
+              <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-[#4a2e2b]/25 p-3 backdrop-blur-[2px]">
                 {biddingCard}
               </div>
             )}
@@ -1314,26 +1325,26 @@ export function GameTable({
           aria-modal="true"
           aria-label={`Round ${latestRoundRecord.round} Summary`}
           data-testid="round-summary-modal"
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-[#4a2e2b]/35 p-4 backdrop-blur-sm"
         >
-          <div className="glass-pill w-full max-w-lg rounded-2xl border-amber-300/35 p-5 text-[#faf3e6] shadow-2xl">
+          <div className="glass-pill animate-panel-enter w-full max-w-lg rounded-[30px] border-2 border-[#f7c0ce] p-5 text-[#4a2e2b] shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-bangla text-xl font-extrabold text-amber-300">
+              <h2 className="font-bangla text-xl font-extrabold text-[#d94f72]">
                 Round {latestRoundRecord.round} / {TOTAL_ROUNDS}
               </h2>
               <button
                 type="button"
                 onClick={() => setScoreboardOpen(true)}
-                className="rounded-full border border-amber-300/40 bg-white/10 px-3 py-1 font-bangla text-xs font-bold text-amber-200 hover:bg-amber-400 hover:text-[#1b1108]"
+                className="rounded-full border-2 border-[#ffccd8] bg-[#fff0f4] px-3.5 py-1 font-bangla text-xs font-bold text-[#c73e65] transition hover:bg-[#ff7597] hover:text-white"
               >
                 স্কোরবোর্ড
               </button>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-[#f5d4dc] bg-white px-3 py-1">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-white/15 text-[#d7c4a3]">
+                  <tr className="border-b border-[#f5d8df] text-[#8c6460]">
                     <th className="py-2 pr-2">Player</th>
                     <th className="py-2 px-2 text-right">Call</th>
                     <th className="py-2 px-2 text-right">Won</th>
@@ -1346,20 +1357,22 @@ export function GameTable({
                     return (
                       <tr
                         key={entry.seatIndex}
-                        className="border-b border-white/10"
+                        className="border-b border-[#faeaee] last:border-b-0"
                       >
-                        <td className="py-2 pr-2 font-bold">{entry.username}</td>
-                        <td className="py-2 px-2 text-right text-amber-200">
+                        <td className="py-2 pr-2 font-bold text-[#4a2e2b]">
+                          {entry.username}
+                        </td>
+                        <td className="py-2 px-2 text-right font-semibold text-[#c47d10]">
                           {entry.call}
                         </td>
                         <td
-                          className={`py-2 px-2 text-right font-bold ${
-                            hit ? 'text-emerald-400' : 'text-red-400'
+                          className={`py-2 px-2 text-right font-extrabold ${
+                            hit ? 'text-[#289664]' : 'text-[#d94f72]'
                           }`}
                         >
                           {entry.capturedPoints}
                         </td>
-                        <td className="py-2 pl-2 text-right font-extrabold text-white">
+                        <td className="py-2 pl-2 text-right font-black text-[#4a2e2b]">
                           {entry.totalAfter}
                         </td>
                       </tr>
@@ -1374,7 +1387,7 @@ export function GameTable({
                 type="button"
                 onClick={() => onDispatchAction({ type: 'NEXT_ROUND' })}
                 data-testid="next-round-btn"
-                className="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-extrabold text-[#1b1108] hover:bg-amber-300"
+                className="rounded-2xl bg-[#ff7597] px-5 py-2.5 text-sm font-extrabold text-white shadow-[0_4px_0_#d94f72] transition hover:bg-[#ff6188] active:translate-y-[2px] active:shadow-[0_2px_0_#d94f72]"
               >
                 {state.round >= TOTAL_ROUNDS
                   ? 'View Final Podium'
@@ -1392,18 +1405,20 @@ export function GameTable({
           aria-modal="true"
           aria-label="Match Over Podium"
           data-testid="match-over-modal"
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-[#4a2e2b]/35 p-4 backdrop-blur-sm"
         >
-          <div className="glass-pill w-full max-w-lg rounded-2xl border-amber-300/50 p-6 text-[#faf3e6] shadow-2xl">
+          <div className="glass-pill animate-panel-enter w-full max-w-lg rounded-[32px] border-2 border-[#ffc857] p-6 text-[#4a2e2b] shadow-2xl">
             <div className="mb-5 flex flex-col items-center text-center">
-              <Trophy className="mb-2 h-10 w-10 text-amber-300" />
-              <h2 className="font-bangla text-2xl font-extrabold text-[#faf3e6]">
-                হানডেট <span className="text-[#e0a943]">HUNDRED</span>
+              <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-[#fff3cc] ring-4 ring-[#ffe8a3]/60">
+                <Trophy className="h-8 w-8 text-[#e69500]" />
+              </div>
+              <h2 className="font-bangla text-2xl font-extrabold text-[#4a2e2b]">
+                হানডেট <span className="text-[#f25c84]">HUNDRED</span>
               </h2>
               {matchRankings[0] && (
-                <p className="mt-1.5 text-sm text-[#e6d5b8]">
+                <p className="mt-1.5 text-sm font-semibold text-[#7d5a58]">
                   Winner:{' '}
-                  <strong className="text-amber-300">
+                  <strong className="text-[#d94f72]">
                     {matchRankings[0].username}
                   </strong>{' '}
                   — {matchRankings[0].totalScore} pts
@@ -1415,21 +1430,21 @@ export function GameTable({
               {matchRankings.map((entry) => (
                 <li
                   key={entry.seatIndex}
-                  className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-sm ${
+                  className={`flex items-center justify-between rounded-2xl border-2 px-4 py-2.5 text-sm ${
                     entry.rank === 1
-                      ? 'border-amber-300/60 bg-amber-400/15'
-                      : 'border-white/15 bg-black/35'
+                      ? 'border-[#ffc857] bg-[#fff8e0]'
+                      : 'border-[#f4d4dc] bg-white'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-black text-amber-300">
+                    <span className="text-sm font-black text-[#e69500]">
                       #{entry.rank}
                     </span>
-                    <span className="font-bold text-white">
+                    <span className="font-bold text-[#4a2e2b]">
                       {entry.username}
                     </span>
                   </div>
-                  <span className="font-extrabold text-amber-200">
+                  <span className="font-extrabold text-[#d94f72]">
                     {entry.totalScore} pts
                   </span>
                 </li>
@@ -1440,7 +1455,7 @@ export function GameTable({
               <button
                 type="button"
                 onClick={onLeaveRoom}
-                className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-[#faf3e6] hover:bg-white/15"
+                className="rounded-2xl border-2 border-[#f2c4cf] bg-white px-4 py-2 text-sm font-bold text-[#6e4946] transition hover:bg-[#fff0ec]"
               >
                 Back to Lobby
               </button>
@@ -1448,7 +1463,7 @@ export function GameTable({
                 type="button"
                 onClick={() => onDispatchAction({ type: 'PLAY_AGAIN' })}
                 data-testid="play-again-btn"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-400 px-5 py-2 text-sm font-extrabold text-[#1b1108] hover:bg-amber-300"
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-[#ff7597] px-5 py-2 text-sm font-extrabold text-white shadow-[0_4px_0_#d94f72] transition hover:bg-[#ff6188] active:translate-y-[2px] active:shadow-[0_2px_0_#d94f72]"
               >
                 <RotateCcw className="h-4 w-4" />
                 <span>Play Again</span>

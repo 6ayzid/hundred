@@ -117,55 +117,55 @@ function playTone(
   osc.stop(startTime + durationSec + 0.02);
 }
 
-/** Crisp paper card snap onto woven mat with subtle pitch variation */
+/** Soft bubbly card pop onto pastel mat with subtle pitch variation */
 export function playCardSound(): void {
-  const pitchJitter = 0.92 + Math.random() * 0.16;
-  playFilteredNoise(0.055, 1900 * pitchJitter, 0.28, 0);
-  playFilteredNoise(0.035, 3400 * pitchJitter, 0.12, 0.008);
-  playTone(145 * pitchJitter, 0.055, 0.11, 'sine', 0);
+  const pitchJitter = 0.94 + Math.random() * 0.14;
+  playFilteredNoise(0.045, 2200 * pitchJitter, 0.2, 0);
+  playTone(320 * pitchJitter, 0.055, 0.09, 'sine', 0);
+  playTone(540 * pitchJitter, 0.045, 0.05, 'triangle', 0.012);
 }
 
 /** Soft airy card-slide tick for one-by-one card dealing & stack collection */
 export function playDealTickSound(step = 0): void {
-  const freq = 2100 + (step % 5) * 140;
-  playFilteredNoise(0.032, freq, 0.14, 0);
-  playTone(220 + (step % 5) * 14, 0.025, 0.04, 'triangle', 0);
+  const freq = 2300 + (step % 5) * 160;
+  playFilteredNoise(0.028, freq, 0.12, 0);
+  playTone(390 + (step % 5) * 26, 0.032, 0.045, 'sine', 0);
 }
 
-/** Brisk riffle shuffle + deal cascade */
+/** Brisk playful riffle shuffle + deal cascade */
 export function playShuffleSound(): void {
   for (let i = 0; i < 8; i += 1) {
-    playFilteredNoise(0.036, 1700 + i * 180, 0.16, i * 0.048);
+    playFilteredNoise(0.032, 1900 + i * 190, 0.14, i * 0.046);
     if (i % 2 === 0) {
-      playTone(160 + i * 12, 0.03, 0.04, 'sine', i * 0.048);
+      playTone(330 + i * 32, 0.035, 0.045, 'sine', i * 0.046);
     }
   }
 }
 
-/** Clean tactile wooden click + warm chime for confirming a call */
+/** Cute bubbly two-note marimba pop for confirming a call */
 export function playCallSound(): void {
-  playFilteredNoise(0.03, 1200, 0.12, 0);
-  playTone(480, 0.075, 0.11, 'triangle', 0);
-  playTone(720, 0.11, 0.1, 'sine', 0.045);
+  playTone(587.33, 0.08, 0.1, 'sine', 0);
+  playTone(880, 0.12, 0.1, 'triangle', 0.045);
 }
 
-/** Warm acoustic chime when a trick is captured */
+/** Sparkly ascending chime when a trick is captured */
 export function playTrickWinSound(): void {
-  playTone(523.25, 0.16, 0.1, 'triangle', 0);
-  playTone(659.25, 0.2, 0.11, 'sine', 0.07);
-  playTone(783.99, 0.26, 0.09, 'triangle', 0.14);
+  playTone(587.33, 0.14, 0.09, 'sine', 0);
+  playTone(739.99, 0.16, 0.1, 'triangle', 0.06);
+  playTone(880, 0.2, 0.1, 'sine', 0.12);
+  playTone(1174.66, 0.24, 0.08, 'sine', 0.18);
 }
 
-/** Uplifting chord arpeggio when a round completes */
+/** Joyful sparkling arpeggio when a round completes */
 export function playRoundSummarySound(): void {
-  playTone(440, 0.2, 0.09, 'triangle', 0);
-  playTone(554.37, 0.22, 0.09, 'sine', 0.08);
-  playTone(659.25, 0.26, 0.1, 'triangle', 0.16);
-  playTone(880, 0.34, 0.08, 'sine', 0.24);
+  playTone(523.25, 0.18, 0.09, 'sine', 0);
+  playTone(659.25, 0.2, 0.09, 'triangle', 0.07);
+  playTone(783.99, 0.24, 0.1, 'sine', 0.14);
+  playTone(1046.5, 0.32, 0.09, 'sine', 0.21);
 }
 
-/** Gentle warm pop for banter / chat messages */
+/** Cute bouncy pop for banter / chat messages */
 export function playChatSound(): void {
-  playTone(680, 0.055, 0.06, 'sine', 0);
-  playTone(880, 0.05, 0.04, 'sine', 0.03);
+  playTone(784, 0.055, 0.06, 'sine', 0);
+  playTone(1046.5, 0.06, 0.045, 'sine', 0.03);
 }

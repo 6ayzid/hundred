@@ -661,17 +661,17 @@ export function VoiceBar({
             data-testid="chat-drawer"
             role="region"
             aria-label="Bangla and Banglish Chat Drawer"
-            className="animate-panel-enter mb-2.5 flex w-[295px] flex-col overflow-hidden rounded-2xl border border-amber-300/30 bg-[#160e0a]/96 text-[#faf3e6] shadow-[0_18px_40px_rgba(0,0,0,0.75)] backdrop-blur-md sm:w-[330px]"
+            className="animate-panel-enter mb-2.5 flex w-[295px] flex-col overflow-hidden rounded-[26px] border-2 border-[#f4cbd5] bg-[#fffaf6]/98 text-[#4a2e2b] shadow-[0_14px_34px_rgba(148,88,100,0.22)] backdrop-blur-md sm:w-[330px]"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-black/30 px-3 py-2">
+            <div className="flex items-center justify-between border-b border-[#f5d8df] bg-[#fff0f4] px-3.5 py-2">
               <div className="flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5 text-amber-300" />
-                <span className="text-xs font-bold tracking-wide text-[#faf3e6]">
+                <MessageSquare className="h-3.5 w-3.5 text-[#f25c84]" />
+                <span className="text-xs font-extrabold tracking-wide text-[#4a2e2b]">
                   Table Chat
                 </span>
                 {displayedMessages.length > 0 && (
-                  <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#d8c7ae]">
+                  <span className="rounded-full bg-[#ffdce5] px-1.5 py-0.5 text-[10px] font-bold text-[#c73e65]">
                     {displayedMessages.length}
                   </span>
                 )}
@@ -680,7 +680,7 @@ export function VoiceBar({
                 type="button"
                 onClick={handleToggleChatDrawer}
                 aria-label="Close chat"
-                className="rounded-md px-1.5 py-0.5 text-xs font-bold text-[#cbb89d] transition hover:bg-white/10 hover:text-white"
+                className="rounded-full px-1.5 py-0.5 text-xs font-bold text-[#9c6f74] transition hover:bg-[#ffdce5] hover:text-[#4a2e2b]"
               >
                 ✕
               </button>
@@ -693,7 +693,7 @@ export function VoiceBar({
               className="chat-scroll flex max-h-44 min-h-[112px] flex-col gap-2 overflow-y-auto px-3 py-2.5"
             >
               {displayedMessages.length === 0 ? (
-                <li className="my-auto py-4 text-center text-[11px] text-[#cbb89d]/85">
+                <li className="my-auto py-4 text-center text-[11px] font-medium text-[#9e7774]">
                   Send a quick Bangla banter or message below.
                 </li>
               ) : (
@@ -708,19 +708,19 @@ export function VoiceBar({
                       data-testid="chat-message-item"
                       className={`flex flex-col ${isMine ? 'items-end' : 'items-start'}`}
                     >
-                      <div className="mb-0.5 flex items-center gap-1.5 px-1 text-[10px] text-[#cbb89d]/85">
-                        <span className="font-semibold text-amber-200/95">
+                      <div className="mb-0.5 flex items-center gap-1.5 px-1 text-[10px] text-[#9e7774]">
+                        <span className="font-bold text-[#d94f72]">
                           {isMine ? 'You' : msg.username}
                         </span>
-                        <span className="opacity-65">
+                        <span className="opacity-70">
                           {formatMsgTime(msg.timestamp)}
                         </span>
                       </div>
                       <div
-                        className={`max-w-[85%] break-words rounded-2xl px-3 py-1.5 text-xs leading-snug shadow-sm ${
+                        className={`max-w-[85%] break-words rounded-2xl px-3 py-1.5 text-xs font-medium leading-snug shadow-sm ${
                           isMine
-                            ? 'rounded-tr-sm border border-amber-300/35 bg-amber-400/20 text-[#fff6e5]'
-                            : 'rounded-tl-sm border border-white/12 bg-white/10 text-[#f5ecdf]'
+                            ? 'rounded-tr-sm border border-[#ffbfd0] bg-[#ffe6ee] text-[#4a2e2b]'
+                            : 'rounded-tl-sm border border-[#ecd9dd] bg-white text-[#4a2e2b]'
                         }`}
                       >
                         {msg.text}
@@ -734,7 +734,7 @@ export function VoiceBar({
             {/* Quick Bangla Banter Chips */}
             <div
               data-testid="banter-chips-row"
-              className="flex flex-wrap gap-1 border-t border-white/10 bg-black/20 px-2.5 py-2"
+              className="flex flex-wrap gap-1 border-t border-[#f5d8df] bg-[#fff5f7] px-2.5 py-2"
             >
               {BANTER_CHIPS.map((chip) => (
                 <button
@@ -742,7 +742,7 @@ export function VoiceBar({
                   type="button"
                   data-testid={`banter-chip-${chip}`}
                   onClick={() => handleSendMessage(chip, true)}
-                  className="rounded-full border border-amber-300/30 bg-amber-500/12 px-2.5 py-0.5 text-[11px] font-semibold text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108] active:scale-95"
+                  className="rounded-full border border-[#ffbfd0] bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#c73e65] transition hover:bg-[#ff7597] hover:text-white active:scale-95"
                 >
                   {chip}
                 </button>
@@ -752,7 +752,7 @@ export function VoiceBar({
             {/* Pill Input Row */}
             <form
               onSubmit={handleChatFormSubmit}
-              className="flex items-center gap-1.5 border-t border-white/10 bg-black/35 p-2"
+              className="flex items-center gap-1.5 border-t border-[#f5d8df] bg-[#fff0f4]/60 p-2"
             >
               <input
                 type="text"
@@ -762,13 +762,13 @@ export function VoiceBar({
                 value={chatDraft}
                 onChange={(e) => setChatDraft(e.target.value)}
                 data-testid="chat-draft-input"
-                className="min-w-0 flex-1 rounded-full border border-white/15 bg-black/50 px-3 py-1.5 text-xs text-white placeholder:text-stone-400 focus:border-amber-400 focus:outline-none"
+                className="min-w-0 flex-1 rounded-full border border-[#f2c4cf] bg-white px-3 py-1.5 text-xs text-[#4a2e2b] placeholder:text-[#b89694] focus:border-[#ff7597] focus:outline-none"
               />
               <button
                 type="submit"
                 aria-label="Send"
                 data-testid="chat-send-button"
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[#1b1108] transition hover:bg-amber-300 active:scale-95"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7597] text-white shadow-[0_2px_0_#d94f72] transition hover:bg-[#ff6188] active:scale-95"
               >
                 <Send className="h-3.5 w-3.5" />
               </button>
@@ -778,13 +778,13 @@ export function VoiceBar({
 
         {/* Floating Audio / Village 3G / Rain Popover above bottom-right dock */}
         {isSettingsOpen && (
-          <div className="glass-pill mb-2.5 w-[250px] space-y-2 rounded-2xl p-3 text-xs text-[#faf3e6] shadow-2xl">
-            <div className="flex items-center justify-between text-[11px] text-amber-200/90">
-              <span className="inline-flex items-center gap-1.5 font-semibold">
+          <div className="glass-pill mb-2.5 w-[250px] space-y-2 rounded-[24px] p-3 text-xs text-[#4a2e2b] shadow-xl">
+            <div className="flex items-center justify-between text-[11px] text-[#8c6460]">
+              <span className="inline-flex items-center gap-1.5 font-bold text-[#d94f72]">
                 <Radio className="h-3.5 w-3.5" />
                 {isFallbackMode ? 'Voice: Local Fallback' : 'Voice: Connected'}
               </span>
-              <span className="opacity-75">
+              <span className="font-semibold opacity-80">
                 {effectiveLowDataMode ? '16kbps' : '24kbps'}
               </span>
             </div>
@@ -798,10 +798,10 @@ export function VoiceBar({
               onPointerUp={releasePtt}
               onPointerCancel={releasePtt}
               onPointerLeave={releasePtt}
-              className={`flex w-full touch-none select-none items-center justify-center gap-1.5 rounded-xl border px-3 py-2 font-semibold transition ${
+              className={`flex w-full touch-none select-none items-center justify-center gap-1.5 rounded-2xl border-2 px-3 py-2 font-bold transition ${
                 isHoldingPtt
-                  ? 'border-amber-300 bg-amber-400 text-[#1b1108]'
-                  : 'border-white/15 bg-white/10 text-white hover:bg-white/15'
+                  ? 'border-[#ff7597] bg-[#ff7597] text-white'
+                  : 'border-[#f4cbd5] bg-white text-[#5c3d3a] hover:bg-[#fff0f4]'
               }`}
             >
               <Mic className="h-3.5 w-3.5" />
@@ -814,10 +814,10 @@ export function VoiceBar({
                 data-testid="village-3g-toggle"
                 aria-pressed={effectiveLowDataMode}
                 onClick={handleToggleLowData}
-                className={`flex items-center justify-center gap-1 rounded-xl border px-2 py-1.5 text-[11px] font-semibold transition ${
+                className={`flex items-center justify-center gap-1 rounded-2xl border-2 px-2 py-1.5 text-[11px] font-bold transition ${
                   effectiveLowDataMode
-                    ? 'border-amber-400 bg-amber-500/25 text-amber-200'
-                    : 'border-white/15 bg-white/5 text-stone-300 hover:bg-white/10'
+                    ? 'border-[#ffc857] bg-[#fff5d6] text-[#8a5808]'
+                    : 'border-[#f0d8de] bg-white text-[#8c6460] hover:bg-[#fff5f7]'
                 }`}
               >
                 <SignalLow className="h-3.5 w-3.5" />
@@ -829,10 +829,10 @@ export function VoiceBar({
                 data-testid="rain-toggle"
                 aria-pressed={effectiveRainEnabled}
                 onClick={handleToggleRain}
-                className={`flex items-center justify-center gap-1 rounded-xl border px-2 py-1.5 text-[11px] font-semibold transition ${
+                className={`flex items-center justify-center gap-1 rounded-2xl border-2 px-2 py-1.5 text-[11px] font-bold transition ${
                   effectiveRainEnabled
-                    ? 'border-sky-400/50 bg-sky-500/20 text-sky-200'
-                    : 'border-white/15 bg-white/5 text-stone-300 hover:bg-white/10'
+                    ? 'border-[#8ec5fc] bg-[#eaf4ff] text-[#2b6cb0]'
+                    : 'border-[#f0d8de] bg-white text-[#8c6460] hover:bg-[#fff5f7]'
                 }`}
               >
                 <CloudRain className="h-3.5 w-3.5" />
@@ -843,7 +843,7 @@ export function VoiceBar({
         )}
 
         {/* Sleek Bottom-Right Glass Dock */}
-        <div className="glass-pill flex shrink-0 items-center gap-1 rounded-2xl px-1.5 py-1 sm:gap-1.5 sm:px-2 sm:py-1.5 md:flex-col md:gap-2 md:px-3 md:py-2.5">
+        <div className="glass-pill flex shrink-0 items-center gap-1 rounded-[24px] px-1.5 py-1 sm:gap-1.5 sm:px-2 sm:py-1.5 md:flex-col md:gap-2 md:px-3 md:py-2.5">
           <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
             {/* Mic Button */}
             <button
@@ -854,18 +854,18 @@ export function VoiceBar({
               data-active={String(isOpenMic)}
               data-state={isOpenMic ? 'unmuted' : 'muted'}
               onClick={handleToggleOpenMic}
-              className={`flex h-8 w-8 items-center justify-center rounded-xl border transition sm:h-9 sm:w-9 md:h-12 md:w-14 md:flex-col md:gap-0.5 ${
+              className={`flex h-8 w-8 items-center justify-center rounded-2xl border-2 transition sm:h-9 sm:w-9 md:h-12 md:w-14 md:flex-col md:gap-0.5 ${
                 isMicActive
-                  ? 'border-emerald-400/80 bg-emerald-500/20 text-emerald-100'
-                  : 'border-white/15 bg-white/10 text-[#faf3e6] hover:bg-white/15'
+                  ? 'border-[#52b788] bg-[#e6f9ef] text-[#1f7a51]'
+                  : 'border-[#f3d0d9] bg-white text-[#5c3d3a] hover:bg-[#fff0f4]'
               }`}
             >
               {isMicActive ? (
                 <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               ) : (
-                <MicOff className="h-3.5 w-3.5 opacity-90 sm:h-4 sm:w-4" />
+                <MicOff className="h-3.5 w-3.5 opacity-80 sm:h-4 sm:w-4" />
               )}
-              <span className="hidden text-[10px] font-semibold leading-none md:inline">
+              <span className="hidden text-[10px] font-bold leading-none md:inline">
                 Mic
               </span>
             </button>
@@ -883,18 +883,18 @@ export function VoiceBar({
                 setIsSettingsOpen(false);
                 handleToggleChatDrawer();
               }}
-              className={`relative flex h-8 w-8 items-center justify-center rounded-xl border transition sm:h-9 sm:w-9 md:h-12 md:w-14 md:flex-col md:gap-0.5 ${
+              className={`relative flex h-8 w-8 items-center justify-center rounded-2xl border-2 transition sm:h-9 sm:w-9 md:h-12 md:w-14 md:flex-col md:gap-0.5 ${
                 isChatOpen
-                  ? 'border-amber-300/80 bg-amber-400/20 text-amber-100'
-                  : 'border-white/15 bg-white/10 text-[#faf3e6] hover:bg-white/15'
+                  ? 'border-[#ff7597] bg-[#fff0f4] text-[#c73e65]'
+                  : 'border-[#f3d0d9] bg-white text-[#5c3d3a] hover:bg-[#fff0f4]'
               }`}
             >
               <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden text-[10px] font-semibold leading-none md:inline">
+              <span className="hidden text-[10px] font-bold leading-none md:inline">
                 Chat
               </span>
               {displayedMessages.length > 0 && !isChatOpen && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-[#1b1108]">
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ff7597] px-1 text-[9px] font-bold text-white shadow-sm">
                   {displayedMessages.length}
                 </span>
               )}
@@ -908,12 +908,12 @@ export function VoiceBar({
               onClick={onCopyRoomCode}
               data-testid="table-room-code"
               title="Copy room invite link"
-              className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-white/5 px-1.5 py-1 text-[9.5px] font-semibold tracking-tight text-[#f2e6d3]/90 hover:text-amber-300 sm:px-2 sm:text-[10px] md:bg-transparent md:p-0 md:text-[11px] md:tracking-wide"
+              className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-[#fff0f4] px-1.5 py-1 text-[9.5px] font-bold tracking-tight text-[#7d5a58] hover:text-[#d94f72] sm:px-2 sm:text-[10px] md:bg-transparent md:p-0 md:text-[11px] md:tracking-wide"
             >
               <span className="hidden md:inline">Room: </span>
               <span>{roomCode}</span>
               {copiedRoom ? (
-                <Check className="h-2.5 w-2.5 shrink-0 text-emerald-400 sm:h-3 sm:w-3" />
+                <Check className="h-2.5 w-2.5 shrink-0 text-[#289664] sm:h-3 sm:w-3" />
               ) : (
                 <Copy className="h-2.5 w-2.5 shrink-0 opacity-60" />
               )}
@@ -927,10 +927,10 @@ export function VoiceBar({
               }}
               aria-label="Voice & Village 3G settings"
               title="Voice, Village 3G & Rain settings"
-              className={`rounded-lg p-1 transition sm:p-1.5 md:p-1 ${
+              className={`rounded-xl p-1 transition sm:p-1.5 md:p-1 ${
                 isSettingsOpen
-                  ? 'bg-amber-400/25 text-amber-200'
-                  : 'text-[#d7c4a3]/80 hover:bg-white/10 hover:text-white'
+                  ? 'bg-[#ffe6ee] text-[#d94f72]'
+                  : 'text-[#8c6460] hover:bg-[#fff0f4] hover:text-[#4a2e2b]'
               }`}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -974,16 +974,16 @@ export function VoiceBar({
         </LiveKitRoom>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-900/50 bg-stone-950/90 px-3 py-2 text-amber-100 shadow-lg backdrop-blur-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-3xl border-2 border-[#f4cbd5] bg-[#fff8f5] px-3 py-2.5 text-[#4a2e2b] shadow-sm">
         {/* Status / Unconfigured Fallback Banner */}
         <div className="flex items-center gap-2 text-xs">
           {isFallbackMode ? (
             <div
               data-testid="livekit-fallback-banner"
               role="status"
-              className="flex items-center gap-1.5 rounded-lg border border-amber-700/60 bg-amber-950/70 px-2.5 py-1 text-[11px] font-medium text-amber-200"
+              className="flex items-center gap-1.5 rounded-full border border-[#ffd88a] bg-[#fff6db] px-3 py-1 text-[11px] font-semibold text-[#7a5010]"
             >
-              <Radio className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+              <Radio className="h-3.5 w-3.5 shrink-0 text-[#e69500]" />
               <span>
                 LiveKit Voice unconfigured — text &amp; bot fallback active
                 (configure .env.local)
@@ -993,9 +993,9 @@ export function VoiceBar({
             <div
               data-testid="livekit-connected-banner"
               role="status"
-              className="flex items-center gap-1.5 rounded-lg border border-emerald-700/60 bg-emerald-950/70 px-2.5 py-1 text-[11px] font-medium text-emerald-200"
+              className="flex items-center gap-1.5 rounded-full border border-[#a3dec0] bg-[#e6f9ef] px-3 py-1 text-[11px] font-semibold text-[#1f7a51]"
             >
-              <Radio className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+              <Radio className="h-3.5 w-3.5 shrink-0 text-[#289664]" />
               <span>
                 LiveKit Voice connected (
                 {effectiveLowDataMode ? '16kbps' : '24kbps'} Opus)
@@ -1015,10 +1015,10 @@ export function VoiceBar({
             data-active={String(isOpenMic)}
             data-state={isOpenMic ? 'unmuted' : 'muted'}
             onClick={handleToggleOpenMic}
-            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
+            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-2xl border-2 px-2.5 py-1.5 text-xs font-bold transition ${
               isOpenMic
-                ? 'border-emerald-400 bg-emerald-700/90 text-white shadow-sm'
-                : 'border-stone-700 bg-stone-900/90 text-stone-200 hover:border-amber-700/70'
+                ? 'border-[#52b788] bg-[#e6f9ef] text-[#1f7a51] shadow-sm'
+                : 'border-[#f0d8de] bg-white text-[#6e4946] hover:border-[#ff8fab]'
             }`}
           >
             {isOpenMic ? (
@@ -1047,10 +1047,10 @@ export function VoiceBar({
             onTouchStart={engagePtt}
             onTouchEnd={releasePtt}
             onTouchCancel={releasePtt}
-            className={`inline-flex min-h-[42px] min-w-[52px] touch-none select-none items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+            className={`inline-flex min-h-[42px] min-w-[52px] touch-none select-none items-center justify-center gap-1.5 rounded-2xl border-2 px-3 py-2 text-xs font-bold transition ${
               isHoldingPtt
-                ? 'border-amber-300 bg-amber-600 text-stone-950 shadow-md ring-2 ring-amber-400/70'
-                : 'border-amber-800/80 bg-stone-900/90 text-amber-100 hover:border-amber-600'
+                ? 'border-[#ff7597] bg-[#ff7597] text-white shadow-md ring-2 ring-[#ffbfd0]'
+                : 'border-[#f4cbd5] bg-white text-[#c73e65] hover:bg-[#fff0f4]'
             }`}
           >
             <Mic className="h-3.5 w-3.5 shrink-0" />
@@ -1068,10 +1068,10 @@ export function VoiceBar({
             data-low-data-mode={String(effectiveLowDataMode)}
             data-audio-bitrate={String(targetBitrate)}
             onClick={handleToggleLowData}
-            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
+            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-2xl border-2 px-2.5 py-1.5 text-xs font-bold transition ${
               effectiveLowDataMode
-                ? 'border-amber-400 bg-amber-800/90 text-amber-50 shadow-sm'
-                : 'border-stone-700 bg-stone-900/90 text-stone-300 hover:border-amber-700/70'
+                ? 'border-[#ffc857] bg-[#fff5d6] text-[#8a5808] shadow-sm'
+                : 'border-[#f0d8de] bg-white text-[#6e4946] hover:border-[#ffd88a]'
             }`}
           >
             <SignalLow className="h-3.5 w-3.5 shrink-0" />
@@ -1091,10 +1091,10 @@ export function VoiceBar({
             data-active={String(effectiveRainEnabled)}
             data-state={effectiveRainEnabled ? 'active' : 'inactive'}
             onClick={handleToggleRain}
-            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
+            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-2xl border-2 px-2.5 py-1.5 text-xs font-bold transition ${
               effectiveRainEnabled
-                ? 'border-sky-500/80 bg-sky-950/90 text-sky-100 shadow-sm'
-                : 'border-stone-700 bg-stone-900/90 text-stone-400 hover:border-stone-500'
+                ? 'border-[#8ec5fc] bg-[#eaf4ff] text-[#2b6cb0] shadow-sm'
+                : 'border-[#f0d8de] bg-white text-[#8c6460] hover:border-[#b8d8fc]'
             }`}
           >
             <CloudRain className="h-3.5 w-3.5 shrink-0" />
@@ -1111,10 +1111,10 @@ export function VoiceBar({
             data-active={String(isChatOpen)}
             data-state={isChatOpen ? 'open' : 'closed'}
             onClick={handleToggleChatDrawer}
-            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
+            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-2xl border-2 px-2.5 py-1.5 text-xs font-bold transition ${
               isChatOpen
-                ? 'border-amber-400 bg-amber-700/90 text-stone-950 shadow-sm'
-                : 'border-stone-700 bg-stone-900/90 text-amber-100 hover:border-amber-700'
+                ? 'border-[#ff7597] bg-[#ff7597] text-white shadow-sm'
+                : 'border-[#f0d8de] bg-white text-[#c73e65] hover:border-[#ff8fab]'
             }`}
           >
             <MessageSquare className="h-3.5 w-3.5 shrink-0" />
@@ -1129,7 +1129,7 @@ export function VoiceBar({
           data-testid="chat-drawer"
           role="region"
           aria-label="Bangla and Banglish Chat Drawer"
-          className="animate-panel-enter mt-2 w-full max-w-full overflow-hidden rounded-2xl border border-amber-300/25 bg-[#19100c]/95 text-[#faf3e6] shadow-2xl backdrop-blur-md"
+          className="animate-panel-enter mt-2 w-full max-w-full overflow-hidden rounded-[26px] border-2 border-[#f4cbd5] bg-[#fffaf6] text-[#4a2e2b] shadow-lg"
         >
           {/* Auto-scrolling Message Bubbles */}
           <ul
@@ -1138,7 +1138,7 @@ export function VoiceBar({
             className="chat-scroll flex max-h-44 min-h-[96px] w-full max-w-full flex-col gap-2 overflow-y-auto overflow-x-hidden px-3 py-2.5"
           >
             {displayedMessages.length === 0 ? (
-              <li className="my-auto py-3 text-center text-xs text-[#cbb89d]/85">
+              <li className="my-auto py-3 text-center text-xs font-medium text-[#9e7774]">
                 Tap a quick banter chip or send a message below.
               </li>
             ) : (
@@ -1155,19 +1155,19 @@ export function VoiceBar({
                       isMine ? 'items-end' : 'items-start'
                     }`}
                   >
-                    <div className="mb-0.5 flex items-center gap-1.5 px-1 text-[10px] text-[#cbb89d]/85">
-                      <span className="font-semibold text-amber-200/95">
+                    <div className="mb-0.5 flex items-center gap-1.5 px-1 text-[10px] text-[#9e7774]">
+                      <span className="font-bold text-[#d94f72]">
                         {msg.username}
                       </span>
-                      <span className="opacity-65">
+                      <span className="opacity-70">
                         {formatMsgTime(msg.timestamp)}
                       </span>
                     </div>
                     <div
-                      className={`max-w-[85%] overflow-x-hidden break-all [overflow-wrap:anywhere] rounded-2xl px-3 py-1.5 text-xs leading-snug ${
+                      className={`max-w-[85%] overflow-x-hidden break-all [overflow-wrap:anywhere] rounded-2xl px-3 py-1.5 text-xs font-medium leading-snug ${
                         isMine
-                          ? 'rounded-tr-sm border border-amber-300/35 bg-amber-400/20 text-[#fff6e5]'
-                          : 'rounded-tl-sm border border-white/12 bg-white/10 text-[#f5ecdf]'
+                          ? 'rounded-tr-sm border border-[#ffbfd0] bg-[#ffe6ee] text-[#4a2e2b]'
+                          : 'rounded-tl-sm border border-[#ecd9dd] bg-white text-[#4a2e2b]'
                       }`}
                     >
                       {msg.text}
@@ -1181,7 +1181,7 @@ export function VoiceBar({
           {/* 4 1-Tap Bangla/Banglish Quick-Banter Chips */}
           <div
             data-testid="banter-chips-row"
-            className="flex flex-wrap items-center gap-1.5 border-t border-white/10 bg-black/25 px-3 py-2"
+            className="flex flex-wrap items-center gap-1.5 border-t border-[#f5d8df] bg-[#fff5f7] px-3 py-2"
           >
             {BANTER_CHIPS.map((chip) => (
               <button
@@ -1189,7 +1189,7 @@ export function VoiceBar({
                 type="button"
                 data-testid={`banter-chip-${chip}`}
                 onClick={() => handleSendMessage(chip, true)}
-                className="rounded-full border border-amber-300/30 bg-amber-500/12 px-2.5 py-0.5 text-xs font-medium text-amber-200 transition hover:bg-amber-400 hover:text-[#1b1108] active:scale-95"
+                className="rounded-full border border-[#ffbfd0] bg-white px-2.5 py-0.5 text-xs font-bold text-[#c73e65] transition hover:bg-[#ff7597] hover:text-white active:scale-95"
               >
                 {chip}
               </button>
@@ -1199,7 +1199,7 @@ export function VoiceBar({
           {/* Custom Chat Input Row */}
           <form
             onSubmit={handleChatFormSubmit}
-            className="flex w-full max-w-full items-center gap-2 border-t border-white/10 bg-black/35 p-2.5"
+            className="flex w-full max-w-full items-center gap-2 border-t border-[#f5d8df] bg-[#fff0f4]/60 p-2.5"
           >
             <input
               type="text"
@@ -1209,13 +1209,13 @@ export function VoiceBar({
               value={chatDraft}
               onChange={(e) => setChatDraft(e.target.value)}
               data-testid="chat-draft-input"
-              className="min-w-0 flex-1 rounded-full border border-white/15 bg-black/50 px-3.5 py-1.5 text-xs text-white placeholder:text-stone-400 focus:border-amber-400 focus:outline-none"
+              className="min-w-0 flex-1 rounded-full border border-[#f2c4cf] bg-white px-3.5 py-1.5 text-xs text-[#4a2e2b] placeholder:text-[#b89694] focus:border-[#ff7597] focus:outline-none"
             />
             <button
               type="submit"
               aria-label="Send"
               data-testid="chat-send-button"
-              className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-[#1b1108] transition hover:bg-amber-300 active:scale-95"
+              className="inline-flex items-center gap-1 rounded-full bg-[#ff7597] px-3.5 py-1.5 text-xs font-extrabold text-white shadow-[0_2px_0_#d94f72] transition hover:bg-[#ff6188] active:scale-95"
             >
               <Send className="h-3 w-3 shrink-0" />
               <span>Send</span>
