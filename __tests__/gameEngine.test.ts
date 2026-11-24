@@ -385,25 +385,25 @@ describe('4. Lobby initialization, bot seat management & start guardrails (F-06)
 
     state = applyAction(state, { type: 'ADD_BOT', seatIndex: 1 }, 10_500);
     expect(state.seats[1].type).toBe('AI');
-    expect(state.seats[1].username).toBe('Siam');
+    expect(state.seats[1].username).toBe('Siam Bot');
   });
 
-  it('isolates colliding human nickname "Siam" without duplicate bot names or clientId collisions', () => {
-    let state = createInitialLobbyState('TNG-KM47', 'human-siam-1', 'Siam', 10_000);
+  it('isolates colliding human nickname "Siam Bot" without duplicate bot names or clientId collisions', () => {
+    let state = createInitialLobbyState('TNG-KM47', 'human-siam-1', 'Siam Bot', 10_000);
     state = applyAction(state, { type: 'FILL_BOTS_AND_START' }, 10_100);
 
     expect(state.phase).toBe('BIDDING');
     expect(state.seats[0].type).toBe('HUMAN');
     expect(state.seats[0].clientId).toBe('human-siam-1');
-    expect(state.seats[0].username).toBe('Siam');
+    expect(state.seats[0].username).toBe('Siam Bot');
 
     const usernames = state.seats.map((s) => s.username);
     const clientIds = state.seats.map((s) => s.clientId);
     expect(new Set(usernames).size).toBe(4);
     expect(new Set(clientIds).size).toBe(4);
-    expect(state.seats[1].username).toBe('Apon');
-    expect(state.seats[2].username).toBe('Nabil');
-    expect(state.seats[3].username).toBe('Rafi');
+    expect(state.seats[1].username).toBe('Apon Bot');
+    expect(state.seats[2].username).toBe('Nabil Bot');
+    expect(state.seats[3].username).toBe('Rafi Bot');
   });
 
   it('rejects invalid ADD_BOT, REMOVE_BOT, START_MATCH, and FILL_BOTS_AND_START calls without mutation', () => {
@@ -559,32 +559,35 @@ describe('6. Trick play, negative guards, TRICK_COMPLETE & ROUND_SUMMARY pauses 
     expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 0, card: 100 }, 2_300)).toBe(state);
     // Out-of-turn valid card belonging to Seat 1
     expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 1, card: 100 }, 2_300)).toBe(state);
+    // Trick 1 must start with 1 when holder leads (reject 60)
+    expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 0, card: 60 }, 2_300)).toBe(state);
 
-    // Play Trick 1: S0=60, S1=5, S2=10, S3=20 -> enters TRICK_COMPLETE
-    state = playSingleTrick(state, { 0: 60, 1: 5, 2: 10, 3: 20 }, 3_000);
+    // Play Trick 1 leading with 1: S0=1, S1=5, S2=10, S3=20 -> Seat 3 wins 36 pts, enters TRICK_COMPLETE
+    state = playSingleTrick(state, { 0: 1, 1: 5, 2: 10, 3: 20 }, 3_000);
     expect(state.phase).toBe('TRICK_COMPLETE');
     expect(state.currentTrick).toHaveLength(4);
-    expect(state.lastTrickWinnerSeat).toBe(0);
-    expect(state.lastTrickPoints).toBe(95);
-    expect(state.seats[0].tricksWon).toBe(1);
-    expect(state.seats[0].capturedPoints).toBe(95);
+    expect(state.lastTrickWinnerSeat).toBe(3);
+    expect(state.lastTrickPoints).toBe(36);
+    expect(state.seats[3].tricksWon).toBe(1);
+    expect(state.seats[3].capturedPoints).toBe(36);
 
     // Cannot play during TRICK_COMPLETE
-    expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 0, card: 15 }, 3_500)).toBe(state);
+    expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 3, card: 45 }, 3_500)).toBe(state);
 
-    // < 2200ms pause keeps TRICK_COMPLETE and all 4 cards visible
+    // < 2900ms pause keeps TRICK_COMPLETE and all 4 cards visible
     expect(resolveTimeoutOrTransition(state, state.turnDeadline! - 1_000)).toBe(state);
 
-    // At turnDeadline (+2200ms), advances to Trick 2 led by Trick 1 winner (Seat 0)
+    // At turnDeadline (+2900ms), advances to Trick 2 led by Trick 1 winner (Seat 3)
     state = resolveTimeoutOrTransition(state, state.turnDeadline!);
     expect(state.phase).toBe('PLAYING');
     expect(state.trickNumber).toBe(2);
-    expect(state.trickLeaderSeat).toBe(0);
-    expect(state.activeSeat).toBe(0);
+    expect(state.trickLeaderSeat).toBe(3);
+    expect(state.activeSeat).toBe(3);
     expect(state.currentTrick).toEqual([]);
 
-    // Cannot replay card 60 already played in Trick 1
-    expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 0, card: 60 }, 6_000)).toBe(state);
+    // Cannot replay card 1 already played in Trick 1 (and cannot act out of turn)
+    expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 3, card: 1 }, 6_000)).toBe(state);
+    expect(applyAction(state, { type: 'PLAY_CARD', seatIndex: 0, card: 1 }, 6_000)).toBe(state);
   });
 
   it('enforces ROUND_SUMMARY pause and rotates roundStarterSeat on Round 2', () => {
@@ -606,9 +609,9 @@ describe('6. Trick play, negative guards, TRICK_COMPLETE & ROUND_SUMMARY pauses 
     }
 
     const trickPlans: Array<Record<SeatIndex, CardValue>> = [
-      { 0: 60, 1: 5, 2: 10, 3: 20 },
+      { 0: 1, 1: 5, 2: 10, 3: 20 },
       { 0: 15, 1: 35, 2: 55, 3: 45 },
-      { 0: 1, 1: 75, 2: 40, 3: 70 },
+      { 0: 60, 1: 75, 2: 40, 3: 70 },
       { 0: 25, 1: 90, 2: 50, 3: 80 },
       { 0: 30, 1: 100, 2: 65, 3: 95 },
     ];
@@ -647,7 +650,7 @@ describe('6. Trick play, negative guards, TRICK_COMPLETE & ROUND_SUMMARY pauses 
 });
 
 describe('7. Deterministic scoring boundary verification (F-11)', () => {
-  it('Fixture A: verifies 95 < 100 -> 0, call 0 with 721 captured -> 0, 150 >= 100 -> 100, and call 500 -> 0', () => {
+  it('Fixture A: verifies 95 < 100 -> -100, call 50 with 721 captured -> +50, 150 >= 100 -> +100, and call 500 -> -500', () => {
     const fixtureAOrder: CardValue[] = [
       1, 15, 25, 30, 60,
       5, 35, 75, 90, 100,
@@ -668,9 +671,9 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
     }
 
     const tricks: Array<Record<SeatIndex, CardValue>> = [
+      { 0: 1, 1: 75, 2: 40, 3: 70 },
       { 0: 60, 1: 5, 2: 10, 3: 20 },
       { 0: 15, 1: 35, 2: 55, 3: 45 },
-      { 0: 1, 1: 75, 2: 40, 3: 70 },
       { 0: 25, 1: 90, 2: 50, 3: 80 },
       { 0: 30, 1: 100, 2: 65, 3: 95 },
     ];
@@ -692,8 +695,8 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
       seatIndex: 0,
       call: 100,
       capturedPoints: 95,
-      pointsAwarded: 0,
-      totalAfter: 0,
+      pointsAwarded: -100,
+      totalAfter: -100,
     });
     expect(entries[1]).toMatchObject({
       seatIndex: 1,
@@ -713,12 +716,12 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
       seatIndex: 3,
       call: 500,
       capturedPoints: 0,
-      pointsAwarded: 0,
-      totalAfter: 0,
+      pointsAwarded: -500,
+      totalAfter: -500,
     });
   });
 
-  it('Fixture B on Round 2: verifies exact boundary 100 === 100 -> 100, off-by-10 under-capture, and cumulative totalAfter', () => {
+  it('Fixture B on Round 2: verifies exact boundary 100 === 100 -> +100, off-by-10 under-capture -> -call, and cumulative totalAfter', () => {
     const fixtureAOrder: CardValue[] = [
       1, 15, 25, 30, 60,
       5, 35, 75, 90, 100,
@@ -746,9 +749,9 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
 
     let now = 3_000;
     for (const trick of [
+      { 0: 1, 1: 75, 2: 40, 3: 70 },
       { 0: 60, 1: 5, 2: 10, 3: 20 },
       { 0: 15, 1: 35, 2: 55, 3: 45 },
-      { 0: 1, 1: 75, 2: 40, 3: 70 },
       { 0: 25, 1: 90, 2: 50, 3: 80 },
       { 0: 30, 1: 100, 2: 65, 3: 95 },
     ] as Array<Record<SeatIndex, CardValue>>) {
@@ -757,7 +760,7 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
       state = resolveTimeoutOrTransition(state, now);
     }
 
-    // Round 2 starts with Seat 1
+    // Round 2 starts with Seat 0 (holder of card 1 in fixtureBOrder)
     state = applyAction(
       state,
       { type: 'NEXT_ROUND' },
@@ -780,12 +783,12 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
     expect(state.phase).toBe('PLAYING');
     expect(state.activeSeat).toBe(0);
 
-    // Round 2 Trick 1 is led by Seat 0 (holder of card 1)
+    // Round 2 Trick 1 is led by Seat 0 with card 1
     const tricksB: Array<Record<SeatIndex, CardValue>> = [
+      { 0: 1, 1: 50, 2: 65, 3: 95 },   // S3 wins 211
       { 0: 55, 1: 15, 2: 10, 3: 20 }, // S0 wins 100
       { 0: 30, 1: 80, 2: 25, 3: 35 }, // S1 wins 170
       { 0: 5, 1: 40, 2: 45, 3: 60 },  // S3 wins 150
-      { 0: 1, 1: 50, 2: 65, 3: 95 },  // S3 wins 211
       { 0: 70, 1: 75, 2: 90, 3: 100 }, // S3 wins 335
     ];
 
@@ -806,28 +809,28 @@ describe('7. Deterministic scoring boundary verification (F-11)', () => {
       call: 100,
       capturedPoints: 100,
       pointsAwarded: 100,
-      totalAfter: 100,
+      totalAfter: 0,
     });
     expect(round2Entries[1]).toMatchObject({
       seatIndex: 1,
       call: 180,
       capturedPoints: 170,
-      pointsAwarded: 0,
-      totalAfter: 50,
+      pointsAwarded: -180,
+      totalAfter: -130,
     });
     expect(round2Entries[2]).toMatchObject({
       seatIndex: 2,
       call: 50,
       capturedPoints: 0,
-      pointsAwarded: 0,
-      totalAfter: 100, // carried over from Round 1!
+      pointsAwarded: -50,
+      totalAfter: 50,
     });
     expect(round2Entries[3]).toMatchObject({
       seatIndex: 3,
       call: 300,
       capturedPoints: 696,
       pointsAwarded: 300,
-      totalAfter: 300,
+      totalAfter: -200,
     });
   });
 });
@@ -1022,8 +1025,8 @@ describe('9. Timeout constants & shot-clock auto-resolution (F-09, F-10, F-15)',
     expect(BID_TIMEOUT_MS).toBe(25_000);
     expect(PLAY_TIMEOUT_MS).toBe(20_000);
     expect(HOST_STALL_GRACE_MS).toBe(2_500);
-    expect(TRICK_COMPLETE_MS).toBe(2_200);
-    expect(ROUND_SUMMARY_MS).toBe(4_500);
+    expect(TRICK_COMPLETE_MS).toBe(2_900);
+    expect(ROUND_SUMMARY_MS).toBe(6_500);
     expect(TOTAL_ROUNDS).toBe(10);
     expect(AUTO_TIMEOUT_CALL).toBe(50);
   });
@@ -1162,6 +1165,117 @@ describe('10. Bot AI, M3 helpers, deep immutability & Node-safe pure imports', (
       ],
     };
     expect(computeBotCard(fourthLoseState, 3)).toBe(5);
+  });
+
+  it('validates negative totalScore / pointsAwarded in isValidGameState and outperforms an average baseline across duplicate deals', () => {
+    let sampleLobby = createInitialLobbyState('TNG-KM47', 'host-1', 'Rafiq', 1_000);
+    sampleLobby = applyAction(sampleLobby, { type: 'FILL_BOTS_AND_START' }, 1_100);
+    const negativeState: GameState = {
+      ...sampleLobby,
+      phase: 'ROUND_SUMMARY',
+      turnDeadline: 8_000,
+      seats: [
+        { ...sampleLobby.seats[0], hand: [], call: 200, capturedPoints: 90, totalScore: -200 },
+        { ...sampleLobby.seats[1], hand: [], call: 100, capturedPoints: 300, totalScore: 100 },
+        { ...sampleLobby.seats[2], hand: [], call: 150, capturedPoints: 400, totalScore: 150 },
+        { ...sampleLobby.seats[3], hand: [], call: 180, capturedPoints: 176, totalScore: -180 },
+      ],
+      roundHistory: [
+        {
+          round: 1,
+          entries: [
+            { seatIndex: 0, username: 'Rafiq', call: 200, capturedPoints: 90, pointsAwarded: -200, totalAfter: -200 },
+            { seatIndex: 1, username: 'Siam', call: 100, capturedPoints: 300, pointsAwarded: 100, totalAfter: 100 },
+            { seatIndex: 2, username: 'Apon', call: 150, capturedPoints: 400, pointsAwarded: 150, totalAfter: 150 },
+            { seatIndex: 3, username: 'Nabil', call: 180, capturedPoints: 176, pointsAwarded: -180, totalAfter: -180 },
+          ],
+        },
+      ],
+    };
+    expect(isValidGameState(negativeState)).toBe(true);
+
+    const avgHumanCall = (hand: readonly CardValue[]): number => {
+      let est = 0;
+      for (const c of hand) {
+        if (c >= 75) est += c * 0.72;
+        else if (c >= 50) est += c * 0.35;
+      }
+      const rounded = Math.round((est - 10) / 10) * 10;
+      return Math.max(50, Math.min(450, rounded));
+    };
+
+    const avgHumanCard = (state: GameState, seatIndex: SeatIndex): CardValue => {
+      const seat = state.seats[seatIndex];
+      const hand = [...seat.hand].sort((a, b) => a - b);
+      if (state.trickNumber === 1 && state.currentTrick.length === 0 && hand.includes(1)) {
+        return 1;
+      }
+      const needed = (seat.call ?? 100) - seat.capturedPoints;
+      if (state.currentTrick.length === 0) {
+        return needed > 0 ? hand[hand.length - 1] : hand[0];
+      }
+      const curMax = Math.max(...state.currentTrick.map((p) => p.card));
+      const winners = hand.filter((c) => c > curMax);
+      if (state.currentTrick.length === 3) {
+        return needed > 0 && winners.length > 0 ? winners[0] : hand[0];
+      }
+      return needed > 0 && winners.length > 0 ? winners[winners.length - 1] : hand[0];
+    };
+
+    const runDuplicateHalf = (
+      dealSeed: number,
+      mcParity: 0 | 1,
+    ): { mcScore: number; avgScore: number } => {
+      const rng = createMulberry32(dealSeed);
+      let now = 5_000;
+      const lobby = createInitialLobbyState('TNG-BM01', 'host-1', 'Rafiq', now);
+      let state = applyAction(lobby, { type: 'FILL_BOTS_AND_START' }, (now += 10), rng);
+
+      for (let i = 0; i < 4; i += 1) {
+        const sIdx = state.activeSeat;
+        const priorCalls = state.seats
+          .map((s) => s.call)
+          .filter((c): c is number => c !== null);
+        const isMc = sIdx % 2 === mcParity;
+        const call = isMc
+          ? computeBotCall(state.seats[sIdx].hand, priorCalls)
+          : avgHumanCall(state.seats[sIdx].hand);
+        state = applyAction(state, { type: 'PLACE_CALL', seatIndex: sIdx, call }, (now += 10), rng);
+      }
+
+      for (let t = 0; t < TRICKS_PER_ROUND; t += 1) {
+        for (let p = 0; p < 4; p += 1) {
+          const actor = state.activeSeat;
+          const isMc = actor % 2 === mcParity;
+          const card = isMc
+            ? computeBotCard(state, actor)
+            : avgHumanCard(state, actor);
+          state = applyAction(state, { type: 'PLAY_CARD', seatIndex: actor, card }, (now += 10), rng);
+        }
+        now = state.turnDeadline!;
+        state = resolveTimeoutOrTransition(state, now, rng);
+      }
+
+      let mcScore = 0;
+      let avgScore = 0;
+      for (const s of state.seats) {
+        if (s.seatIndex % 2 === mcParity) mcScore += s.totalScore;
+        else avgScore += s.totalScore;
+      }
+      return { mcScore, avgScore };
+    };
+
+    let totalMc = 0;
+    let totalAvg = 0;
+    for (let deal = 1; deal <= 16; deal += 1) {
+      const dealSeed = 10_000 + deal * 7919;
+      const a = runDuplicateHalf(dealSeed, 0);
+      const b = runDuplicateHalf(dealSeed, 1);
+      totalMc += a.mcScore + b.mcScore;
+      totalAvg += a.avgScore + b.avgScore;
+    }
+
+    expect(totalMc).toBeGreaterThan(totalAvg);
   });
 
   it('maintains strict immutability under recursive Object.freeze on valid and invalid paths', () => {
@@ -1435,22 +1549,22 @@ describe('10. Bot AI, M3 helpers, deep immutability & Node-safe pure imports', (
       }),
     ).toBe(false);
 
-    // 7. Reverse-order Bot-first 'Siam' + Human 'Siam' collision resolution in assignHumanSeat
+    // 7. Reverse-order Bot-first 'Siam Bot' + Human 'Siam Bot' collision resolution in assignHumanSeat
     let botFirstLobby = createInitialLobbyState('TNG-KM47', 'host-1', 'Rafiq', 1_000);
     botFirstLobby = applyAction(botFirstLobby, { type: 'ADD_BOT', seatIndex: 1 }, 1_100);
     botFirstLobby = applyAction(botFirstLobby, { type: 'ADD_BOT', seatIndex: 2 }, 1_200);
-    expect(botFirstLobby.seats[1].username).toBe('Siam');
-    expect(botFirstLobby.seats[2].username).toBe('Apon');
+    expect(botFirstLobby.seats[1].username).toBe('Siam Bot');
+    expect(botFirstLobby.seats[2].username).toBe('Apon Bot');
 
-    const withHumanSiam = assignHumanSeat(botFirstLobby, 'guest-siam', '  Siam ', 1_300);
+    const withHumanSiam = assignHumanSeat(botFirstLobby, 'guest-siam', '  Siam Bot ', 1_300);
     expect(withHumanSiam.seats[3]).toMatchObject({
       type: 'HUMAN',
       clientId: 'guest-siam',
-      username: 'Siam',
+      username: 'Siam Bot',
       isOnline: true,
     });
     expect(withHumanSiam.seats[1].type).toBe('AI');
-    expect(withHumanSiam.seats[1].username).toBe('Nabil');
+    expect(withHumanSiam.seats[1].username).toBe('Nabil Bot');
     expect(
       new Set(withHumanSiam.seats.filter((s) => s.type !== 'EMPTY').map((s) => s.username)).size,
     ).toBe(4);
@@ -1460,13 +1574,13 @@ describe('10. Bot AI, M3 helpers, deep immutability & Node-safe pure imports', (
     fullBotLobby = applyAction(fullBotLobby, { type: 'ADD_BOT', seatIndex: 1 }, 1_100);
     fullBotLobby = applyAction(fullBotLobby, { type: 'ADD_BOT', seatIndex: 2 }, 1_200);
     fullBotLobby = applyAction(fullBotLobby, { type: 'ADD_BOT', seatIndex: 3 }, 1_300);
-    const hostRenamedSiam = assignHumanSeat(fullBotLobby, 'host-1', 'Siam', 1_400);
-    expect(hostRenamedSiam.seats[0].username).toBe('Siam');
-    expect(hostRenamedSiam.seats[1].username).toBe('Rafi');
+    const hostRenamedSiam = assignHumanSeat(fullBotLobby, 'host-1', 'Siam Bot', 1_400);
+    expect(hostRenamedSiam.seats[0].username).toBe('Siam Bot');
+    expect(hostRenamedSiam.seats[1].username).toBe('Rafi Bot');
     expect(new Set(hostRenamedSiam.seats.map((s) => s.username)).size).toBe(4);
 
     // No-op reconnect in LOBBY and non-LOBBY preserves exact reference
-    expect(assignHumanSeat(hostRenamedSiam, 'host-1', 'Siam', 1_500)).toBe(hostRenamedSiam);
+    expect(assignHumanSeat(hostRenamedSiam, 'host-1', 'Siam Bot', 1_500)).toBe(hostRenamedSiam);
     expect(assignHumanSeat(playing, 'host-1', 'DifferentName', 2_600)).toBe(playing);
   });
 
@@ -1503,5 +1617,55 @@ describe('10. Bot AI, M3 helpers, deep immutability & Node-safe pure imports', (
       s = engine.applyAction(s, { type: 'PLACE_CALL', seatIndex: 0, call }, 2_100);
       expect(engine.getMatchRankings(s)).toHaveLength(4);
     });
+  });
+
+  it('validates optional seat.avatar in isValidGameState and updates avatar in assignHumanSeat', () => {
+    const customAvatar = {
+      character: 'bunny' as const,
+      bg: 'pink' as const,
+      outfit: 'coral' as const,
+      skin: 'fair' as const,
+    };
+    const updatedAvatar = {
+      character: 'crown' as const,
+      bg: 'sunny' as const,
+      outfit: 'amber' as const,
+      skin: 'tan' as const,
+    };
+
+    const lobby = createInitialLobbyState(
+      'TNG-AV12',
+      'host-1',
+      'Mitu',
+      2_000,
+      customAvatar,
+    );
+    expect(lobby.seats[0].avatar).toEqual(customAvatar);
+    expect(isValidGameState(lobby)).toBe(true);
+
+    const updatedLobby = assignHumanSeat(
+      lobby,
+      'host-1',
+      'Mitu',
+      2_100,
+      updatedAvatar,
+    );
+    expect(updatedLobby.seats[0].avatar).toEqual(updatedAvatar);
+    expect(assignHumanSeat(updatedLobby, 'host-1', 'Mitu', 2_200, updatedAvatar)).toBe(
+      updatedLobby,
+    );
+
+    const invalidSeatState = {
+      ...lobby,
+      seats: lobby.seats.map((seat, idx) =>
+        idx === 0
+          ? {
+              ...seat,
+              avatar: { ...updatedAvatar, character: 'invalid-char' },
+            }
+          : seat,
+      ),
+    };
+    expect(isValidGameState(invalidSeatState)).toBe(false);
   });
 });

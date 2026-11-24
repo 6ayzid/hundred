@@ -10,6 +10,7 @@ import {
   computeBotCard,
   createInitialLobbyState,
   HOST_STALL_GRACE_MS,
+  isValidAvatarConfig,
   isValidGameState,
   isValidRoomCode,
   isValidSeatIndex,
@@ -22,6 +23,7 @@ import {
   SESSION_CLIENT_ID_KEY,
   SESSION_SEAT_KEY_PREFIX,
   STORAGE_STATE_KEY_PREFIX,
+  type AvatarConfig,
   type ChatMessage,
   type ConnectionStatus,
   type GameAction,
@@ -242,10 +244,11 @@ function hydrateInitialRoomState(
   clientId: string,
   username: string,
   syncMode: SyncMode,
+  avatar?: AvatarConfig,
 ): GameState | null {
   const cached = loadCachedGameState(normalizedRoomCode);
   if (cached) {
-    const seated = assignHumanSeat(cached, clientId, username, Date.now());
+    const seated = assignHumanSeat(cached, clientId, username, Date.now(), avatar);
     if (findMySeatIndex(seated, clientId) !== null) {
       return seated;
     }
@@ -255,6 +258,7 @@ function hydrateInitialRoomState(
         clientId,
         username,
         Date.now(),
+        avatar,
       );
     }
     return seated;
@@ -266,6 +270,7 @@ function hydrateInitialRoomState(
       clientId,
       username,
       Date.now(),
+      avatar,
     );
   }
 
@@ -299,6 +304,7 @@ function extractBroadcastEvent(raw: unknown): SyncBroadcastEvent | null {
         type: 'JOIN_REQUEST',
         senderId,
         username: inner.username,
+        ...(isValidAvatarConfig(inner.avatar) ? { avatar: inner.avatar } : {}),
         preferredSeat: isValidSeatIndex(inner.preferredSeat)
           ? inner.preferredSeat
           : null,
@@ -371,7 +377,8 @@ function parsePresenceMetas(rawPresenceState: unknown): PresenceMeta[] {
         ? item.seatIndex
         : null;
       const username =
-        typeof item.username === 'string' ? item.username : 'Player';
+        typeof item.username === 'string' ? item.username : 'অতিথি';
+      const avatar = isValidAvatarConfig(item.avatar) ? item.avatar : undefined;
       const joinedAt =
         typeof item.joinedAt === 'number' && Number.isFinite(item.joinedAt)
           ? item.joinedAt
@@ -382,6 +389,7 @@ function parsePresenceMetas(rawPresenceState: unknown): PresenceMeta[] {
           clientId,
           seatIndex,
           username,
+          ...(avatar !== undefined ? { avatar } : {}),
           joinedAt,
         });
       }
@@ -396,7 +404,7 @@ function parsePresenceMetas(rawPresenceState: unknown): PresenceMeta[] {
  * reconnect caching, and offline local fallback hook for "হান্ডেট (Hundred)".
  */
 export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
-  const { roomCode, username, enabled, joinOnly = false } = options;
+  const { roomCode, username, avatar, enabled, joinOnly = false } = options;
 
   const normalizedRoomCode = useMemo(
     () => normalizeRoomCode(roomCode ?? ''),
@@ -407,7 +415,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     [enabled, normalizedRoomCode],
   );
   const trimmedUsername = useMemo(
-    () => (username ?? '').trim() || 'Player',
+    () => (username ?? '').trim() || 'অতিথি',
     [username],
   );
 
@@ -424,6 +432,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
       clientId,
       trimmedUsername,
       syncMode,
+      avatar,
     );
   });
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -472,6 +481,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
             clientId,
             trimmedUsername,
             nextMode,
+            avatar,
           );
       setState(nextHydrated);
       setConnectionStatus(nextMode === 'supabase' ? 'connecting' : 'local');
@@ -500,6 +510,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
   const stateRef = useRef<GameState | null>(state);
   const clientIdRef = useRef<string>(clientId);
   const usernameRef = useRef<string>(trimmedUsername);
+  const avatarRef = useRef<AvatarConfig | undefined>(avatar);
   const roomCodeRef = useRef<string>(normalizedRoomCode);
   const validRoomRef = useRef<boolean>(validRoom);
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -523,6 +534,10 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
   useEffect(() => {
     usernameRef.current = trimmedUsername;
   }, [trimmedUsername]);
+
+  useEffect(() => {
+    avatarRef.current = avatar;
+  }, [avatar]);
 
   useEffect(() => {
     roomCodeRef.current = normalizedRoomCode;
@@ -835,8 +850,9 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           const updated = assignHumanSeat(
             current,
             event.senderId,
-            event.username.trim() || 'Player',
+            event.username.trim() || 'অতিথি',
             Date.now(),
+            event.avatar,
           );
           if (updated !== current) {
             commitAndPersistState(updated, true);
@@ -1033,6 +1049,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
                   type: 'JOIN',
                   clientId: activeClientId,
                   username: usernameRef.current,
+                  ...(avatarRef.current ? { avatar: avatarRef.current } : {}),
                 }),
               })
                 .then((res) => (res.ok ? res.json() : null))
@@ -1049,6 +1066,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
               type: 'JOIN',
               clientId: activeClientId,
               username: usernameRef.current,
+              ...(avatarRef.current ? { avatar: avatarRef.current } : {}),
             }),
           })
             .then((res) => (res.ok ? res.json() : null))
@@ -1173,6 +1191,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           clientId: activeClientId,
           seatIndex: currentSeat,
           username: usernameRef.current,
+          ...(avatarRef.current ? { avatar: avatarRef.current } : {}),
           joinedAt: joinedAtRef.current,
         };
 
@@ -1193,6 +1212,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
             type: 'JOIN_REQUEST',
             senderId: activeClientId,
             username: usernameRef.current,
+            ...(avatarRef.current ? { avatar: avatarRef.current } : {}),
             preferredSeat: currentSeat,
           });
         }
@@ -1223,6 +1243,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
                   activeClientId,
                   usernameRef.current,
                   Date.now(),
+                  avatarRef.current,
                 );
                 commitAndPersistState(created, true);
               }
@@ -1268,7 +1289,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     isHttpRelayEnabled,
   ]);
 
-  // Re-track Presence whenever mySeatIndex or username changes while subscribed
+  // Re-track Presence whenever mySeatIndex, username, or avatar changes while subscribed
   useEffect(() => {
     if (
       syncMode !== 'supabase' ||
@@ -1281,6 +1302,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
       clientId,
       seatIndex: mySeatIndex,
       username: trimmedUsername,
+      ...(avatar ? { avatar } : {}),
       joinedAt: joinedAtRef.current,
     };
     try {
@@ -1288,7 +1310,80 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     } catch {
       // Ignore track error
     }
-  }, [syncMode, clientId, mySeatIndex, trimmedUsername]);
+  }, [syncMode, clientId, mySeatIndex, trimmedUsername, avatar]);
+
+  // Keep current LOBBY seat username & avatar synced when player updates profile
+  useEffect(() => {
+    if (!validRoom || !state || state.phase !== 'LOBBY' || mySeatIndex === null) {
+      return;
+    }
+    const mySeat = state.seats[mySeatIndex];
+    if (!mySeat || mySeat.type !== 'HUMAN') {
+      return;
+    }
+    const nameDiff = mySeat.username !== trimmedUsername;
+    const avatarDiff = Boolean(
+      avatar &&
+        (!mySeat.avatar ||
+          mySeat.avatar.character !== avatar.character ||
+          mySeat.avatar.bg !== avatar.bg ||
+          mySeat.avatar.outfit !== avatar.outfit ||
+          mySeat.avatar.skin !== avatar.skin),
+    );
+    if (!nameDiff && !avatarDiff) {
+      return;
+    }
+
+    if (isHost) {
+      const updated = assignHumanSeat(
+        state,
+        clientId,
+        trimmedUsername,
+        Date.now(),
+        avatar,
+      );
+      if (updated !== state) {
+        const syncTimer = setTimeout(() => {
+          commitAndPersistState(updated, true);
+        }, 0);
+        return () => clearTimeout(syncTimer);
+      }
+      return;
+    }
+
+    if (syncMode === 'supabase' && isSubscribedRef.current) {
+      sendBroadcastEvent({
+        type: 'JOIN_REQUEST',
+        senderId: clientId,
+        username: trimmedUsername,
+        ...(avatar ? { avatar } : {}),
+        preferredSeat: mySeatIndex,
+      });
+    } else if (syncMode !== 'supabase' && syncMode !== 'local') {
+      void fetch(`/api/rooms/${encodeURIComponent(normalizedRoomCode)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'JOIN',
+          clientId,
+          username: trimmedUsername,
+          ...(avatar ? { avatar } : {}),
+        }),
+      }).catch(() => {});
+    }
+  }, [
+    validRoom,
+    normalizedRoomCode,
+    state,
+    mySeatIndex,
+    isHost,
+    clientId,
+    trimmedUsername,
+    avatar,
+    syncMode,
+    commitAndPersistState,
+    sendBroadcastEvent,
+  ]);
 
   // Reconcile seat online status when Host changes or Presence updates
   useEffect(() => {
@@ -1413,7 +1508,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     commitAndPersistState,
   ]);
 
-  // AI Bot Turn Scheduler (Host only; simultaneous bot calls during BIDDING, turn-based during PLAYING)
+  // AI Bot & Auto-1 Lead Scheduler (Host only; auto-plays 1 after all calls lock, handles AI bidding & turns)
   useEffect(() => {
     if (!validRoom || !isHost || !state) {
       return;
@@ -1423,26 +1518,32 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
       return;
     }
 
-    let targetBotSeatIndex: SeatIndex | null = null;
+    const activeSeatObj = state.seats[state.activeSeat];
+    const isForcedAutoOneLead =
+      state.phase === 'PLAYING' &&
+      state.trickNumber === 1 &&
+      state.currentTrick.length === 0 &&
+      Boolean(activeSeatObj && activeSeatObj.hand.includes(1));
+
+    let targetSeatIndex: SeatIndex | null = null;
     if (state.phase === 'BIDDING') {
       const uncalledBot = state.seats.find(
         (s) => s.type === 'AI' && s.call === null,
       );
       if (uncalledBot) {
-        targetBotSeatIndex = uncalledBot.seatIndex;
+        targetSeatIndex = uncalledBot.seatIndex;
       }
-    } else {
-      const activeSeatObj = state.seats[state.activeSeat];
-      if (activeSeatObj && activeSeatObj.type === 'AI') {
-        targetBotSeatIndex = activeSeatObj.seatIndex;
-      }
+    } else if (isForcedAutoOneLead && activeSeatObj) {
+      targetSeatIndex = activeSeatObj.seatIndex;
+    } else if (activeSeatObj && activeSeatObj.type === 'AI') {
+      targetSeatIndex = activeSeatObj.seatIndex;
     }
 
-    if (targetBotSeatIndex === null) {
+    if (targetSeatIndex === null) {
       return;
     }
 
-    const botSeatIdx = targetBotSeatIndex;
+    const actorSeatIdx = targetSeatIndex;
     const expectedVersion = state.version;
     const expectedMatchId = state.matchId;
     const isJsdom =
@@ -1453,14 +1554,18 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     const delayMs = isJsdom
       ? state.phase === 'BIDDING'
         ? 350
-        : BOT_TURN_DELAY_MS
+        : isForcedAutoOneLead
+          ? 350
+          : BOT_TURN_DELAY_MS
       : state.phase === 'BIDDING'
         ? botsAlreadyCalled === 0
-          ? 1850
-          : 700
-        : 860;
+          ? 4000
+          : 950
+        : isForcedAutoOneLead
+          ? 1250
+          : 1200;
 
-    const botTimer = setTimeout(() => {
+    const turnTimer = setTimeout(() => {
       const current = stateRef.current;
       if (
         !current ||
@@ -1471,13 +1576,13 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
         return;
       }
 
-      const seat = current.seats[botSeatIdx];
-      if (!seat || seat.type !== 'AI') {
+      const seat = current.seats[actorSeatIdx];
+      if (!seat || seat.type === 'EMPTY') {
         return;
       }
 
       if (current.phase === 'BIDDING') {
-        if (seat.call !== null) {
+        if (seat.type !== 'AI' || seat.call !== null) {
           return;
         }
         const existingCalls = current.seats.map((s) => s.call);
@@ -1486,7 +1591,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           current,
           {
             type: 'PLACE_CALL',
-            seatIndex: botSeatIdx,
+            seatIndex: actorSeatIdx,
             call,
           },
           Date.now(),
@@ -1494,13 +1599,20 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
         if (nextState !== current && nextState.version > current.version) {
           commitAndPersistState(nextState, true);
         }
-      } else if (current.phase === 'PLAYING' && current.activeSeat === botSeatIdx) {
-        const card = computeBotCard(current, botSeatIdx);
+      } else if (current.phase === 'PLAYING' && current.activeSeat === actorSeatIdx) {
+        const shouldAutoPlayOne =
+          current.trickNumber === 1 &&
+          current.currentTrick.length === 0 &&
+          seat.hand.includes(1);
+        if (!shouldAutoPlayOne && seat.type !== 'AI') {
+          return;
+        }
+        const card = shouldAutoPlayOne ? 1 : computeBotCard(current, actorSeatIdx);
         const nextState = applyAction(
           current,
           {
             type: 'PLAY_CARD',
-            seatIndex: botSeatIdx,
+            seatIndex: actorSeatIdx,
             card,
           },
           Date.now(),
@@ -1512,7 +1624,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     }, delayMs);
 
     return () => {
-      clearTimeout(botTimer);
+      clearTimeout(turnTimer);
     };
   }, [validRoom, isHost, state, commitAndPersistState]);
 

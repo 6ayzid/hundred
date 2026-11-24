@@ -707,6 +707,36 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       });
       expect(result.current.state?.seats[0].call).toBe(50);
       expect(result.current.state?.phase).toBe('PLAYING');
+
+      // If Seat 0 happens to hold 1 on Trick 1 lead, Host auto-plays 1 first (350ms in jsdom)
+      if (
+        result.current.state?.activeSeat === 0 &&
+        result.current.state.trickNumber === 1 &&
+        result.current.state.currentTrick.length === 0 &&
+        result.current.state.seats[0].hand.includes(1)
+      ) {
+        act(() => {
+          vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
+        });
+        expect(result.current.state?.currentTrick).toContainEqual({
+          seatIndex: 0,
+          card: 1,
+        });
+        // Complete Trick 1 and transition past TRICK_COMPLETE_MS so Seat 0 tests 20s timeout on Trick 2
+        for (
+          let botStep = 0;
+          botStep < 3 && result.current.state?.phase === 'PLAYING';
+          botStep += 1
+        ) {
+          act(() => {
+            vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
+          });
+        }
+        act(() => {
+          vi.advanceTimersByTime(3_000);
+        });
+      }
+
       // Let any AI bots leading before Seat 0 play first
       for (let guard = 0; guard < 3 && result.current.state?.activeSeat !== 0; guard += 1) {
         act(() => {
@@ -715,27 +745,28 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       }
       expect(result.current.state?.activeSeat).toBe(0);
       const initialHand = [...result.current.state!.seats[0].hand];
+      const expectedBeforeCount = initialHand.length;
       const lowestCard = Math.min(...initialHand);
-      expect(initialHand).toHaveLength(5);
+      expect(expectedBeforeCount).toBeGreaterThanOrEqual(4);
 
-      // Advance 15s (< 20s): Seat 0 hand still has 5 cards
+      // Advance 15s (< 20s): Seat 0 hand still has same cards
       act(() => {
         vi.advanceTimersByTime(15_000);
       });
-      expect(result.current.state?.seats[0].hand).toHaveLength(5);
+      expect(result.current.state?.seats[0].hand).toHaveLength(expectedBeforeCount);
 
       // Advance remaining 5.1s (total 20.1s): Seat 0 auto-plays lowestCard
       act(() => {
         vi.advanceTimersByTime(5_100);
       });
-      expect(result.current.state?.seats[0].hand).toHaveLength(4);
+      expect(result.current.state?.seats[0].hand).toHaveLength(expectedBeforeCount - 1);
       expect(result.current.state?.seats[0].hand).not.toContain(lowestCard);
       expect(result.current.state?.currentTrick).toContainEqual({
         seatIndex: 0,
         card: lowestCard,
       });
 
-      // Let remaining AI bots play their Trick 1 cards until TRICK_COMPLETE
+      // Let remaining AI bots play their trick cards until TRICK_COMPLETE
       for (let botStep = 0; botStep < 3 && result.current.state?.phase === 'PLAYING'; botStep += 1) {
         act(() => {
           vi.advanceTimersByTime(BOT_TURN_DELAY_MS + 50);
@@ -745,22 +776,23 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       // Phase is now TRICK_COMPLETE with 4 cards visible
       expect(result.current.state?.phase).toBe('TRICK_COMPLETE');
       expect(result.current.state?.currentTrick).toHaveLength(4);
+      const expectedNextTrick = result.current.state!.trickNumber + 1;
 
-      // At +1200ms (< 2200ms), still in TRICK_COMPLETE
+      // At +1200ms (< 2900ms), still in TRICK_COMPLETE
       act(() => {
         vi.advanceTimersByTime(1_200);
       });
       expect(result.current.state?.phase).toBe('TRICK_COMPLETE');
 
-      // At +1100ms more (total 2300ms >= TRICK_COMPLETE_MS), transitions to Trick 2 PLAYING
+      // At +1800ms more (total 3000ms >= 2900ms TRICK_COMPLETE_MS), transitions to next trick PLAYING
       act(() => {
-        vi.advanceTimersByTime(1_100);
+        vi.advanceTimersByTime(1_800);
       });
       expect(result.current.state?.phase).toBe('PLAYING');
-      expect(result.current.state?.trickNumber).toBe(2);
+      expect(result.current.state?.trickNumber).toBe(expectedNextTrick);
     });
 
-    it('auto-transitions ROUND_SUMMARY after 4500ms (ROUND_SUMMARY_MS) to the next round', () => {
+    it('auto-transitions ROUND_SUMMARY after 6500ms (ROUND_SUMMARY_MS) to the next round', () => {
       const clientId = 'summary-host-id';
       window.sessionStorage.setItem('eksho_client_id', clientId);
       window.sessionStorage.setItem('clientId', clientId);
@@ -812,6 +844,64 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
 
       expect(result.current.state?.phase).toBe('BIDDING');
       expect(result.current.state?.round).toBe(2);
+    });
+
+    it('auto-plays card 1 on Trick 1 lead once all 4 calls lock even when held by a human player', () => {
+      const clientId = 'auto-one-host';
+      window.sessionStorage.setItem('eksho_client_id', clientId);
+      window.sessionStorage.setItem('clientId', clientId);
+
+      const now = Date.now();
+      let base = createInitialLobbyState('TNG-AO11', clientId, 'Rafiq', now);
+      base = applyAction(base, { type: 'FILL_BOTS_AND_START' }, now);
+      // Force Seat 0 (human) to hold card 1 and Seat 1..3 calls locked so Seat 0 locks last
+      const seededSeats = [
+        { ...base.seats[0], hand: [1, 15, 25, 45, 70] as const, call: null },
+        { ...base.seats[1], hand: [5, 30, 50, 80, 95] as const, call: 100 },
+        { ...base.seats[2], hand: [10, 35, 55, 75, 100] as const, call: 100 },
+        { ...base.seats[3], hand: [20, 40, 60, 65, 90] as const, call: 100 },
+      ];
+      const seeded: GameState = {
+        ...base,
+        version: 10,
+        roundStarterSeat: 0,
+        activeSeat: 0,
+        trickLeaderSeat: 0,
+        seats: seededSeats as unknown as GameState['seats'],
+      };
+      window.localStorage.setItem('eksho_state_TNG-AO11', JSON.stringify(seeded));
+
+      const { result } = renderHook(() =>
+        useGameSync({
+          roomCode: 'TNG-AO11',
+          username: 'Rafiq',
+          enabled: true,
+        }),
+      );
+
+      act(() => {
+        result.current.dispatchAction({
+          type: 'PLACE_CALL',
+          seatIndex: 0,
+          call: 100,
+        });
+      });
+
+      expect(result.current.state?.phase).toBe('PLAYING');
+      expect(result.current.state?.activeSeat).toBe(0);
+      expect(result.current.state?.currentTrick).toHaveLength(0);
+
+      // Host auto-plays 1 cleanly in jsdom (~350ms) without manual card tap
+      act(() => {
+        vi.advanceTimersByTime(450);
+      });
+
+      expect(result.current.state?.currentTrick[0]).toEqual({
+        seatIndex: 0,
+        card: 1,
+      });
+      expect(result.current.state?.seats[0].hand).not.toContain(1);
+      expect(result.current.state?.activeSeat).toBe(1);
     });
 
     it('triggers >2500ms Host stall watchdog failover on Seat 1 when Host (Seat 0) stalls past turnDeadline', () => {

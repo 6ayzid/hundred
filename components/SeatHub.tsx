@@ -1,9 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Crown, Mic, MicOff, Target, Trophy, WifiOff } from 'lucide-react';
+import { Mic, MicOff, Target, Trophy, WifiOff } from 'lucide-react';
 import { PlayingCard } from '@/components/PlayingCard';
-import type { SeatState } from '@/lib/types';
+import { RankBadge } from '@/components/RankBadge';
+import { getAvatarPalette, getPresetAvatarForSeat } from '@/lib/avatar';
+import {
+  DEFAULT_LANG,
+  formatNum,
+  localizeDisplayName,
+  TEXTS,
+  type Lang,
+} from '@/lib/i18n';
+import type { AvatarConfig, SeatState } from '@/lib/types';
 
 export type HubPosition = 'top' | 'left' | 'right' | 'bottom-left';
 
@@ -27,182 +36,32 @@ export interface SeatHubProps {
   displayedTricksWon?: number;
   /** Optional override for visible opponent cards during round-start deal animation. */
   visibleHandCount?: number;
+  /** Current match standing (1–4) once Round 1 finishes, displaying distinct per-rank icons on the avatar. */
+  rank?: number | null;
+  lang?: Lang;
 }
 
 /**
- * Handcrafted kawaii chibi SVG character portraits (< 1.5 KB each, 0 KB network bloat).
- * Rosy cheeks, sparkly catchlights, and cozy pastel outfits per seat.
+ * Handcrafted customizable kawaii chibi SVG character portraits (< 2 KB, zero network bloat).
  */
 export function SeatAvatarGraphic({
   seat,
+  avatar,
+  variant,
   size = 44,
 }: {
-  seat: SeatState;
+  seat?: SeatState;
+  avatar?: AvatarConfig;
+  variant?: number;
   size?: number;
 }) {
-  const variant = seat.seatIndex % 4;
+  const cfg =
+    avatar ??
+    seat?.avatar ??
+    getPresetAvatarForSeat(seat ? seat.seatIndex : (variant ?? 0));
+  const { bgBase, bgRing, outfitFill, skinFill } = getAvatarPalette(cfg);
+  const isAi = seat?.type === 'AI';
 
-  // Seat 0: Cozy Mint Kitty-Ear Hoodie Chibi
-  if (variant === 0) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 64 64"
-        fill="none"
-        aria-hidden="true"
-        className="h-full w-full"
-      >
-        <rect width="64" height="64" rx="32" fill="#d8f3dc" />
-        <circle cx="32" cy="30" r="24" fill="#b7e4c7" fillOpacity="0.65" />
-        {/* Little Kitty Ears */}
-        <path d="M18 22L16 10L27 16Z" fill="#52b788" />
-        <path d="M19.5 19.5L18.5 13L24.5 16.5Z" fill="#ffb3c6" />
-        <path d="M46 22L48 10L37 16Z" fill="#52b788" />
-        <path d="M44.5 19.5L45.5 13L39.5 16.5Z" fill="#ffb3c6" />
-        {/* Cozy Mint Hoodie Shoulders */}
-        <path
-          d="M11 64C13 49 21 44 32 44C43 44 51 49 53 64H11Z"
-          fill="#52b788"
-        />
-        <path d="M27 46V55M37 46V55" stroke="#fff8f0" strokeWidth="2" strokeLinecap="round" />
-        <circle cx="27" cy="56" r="1.6" fill="#ffe599" />
-        <circle cx="37" cy="56" r="1.6" fill="#ffe599" />
-        {/* Chibi Head & Hood */}
-        <circle cx="32" cy="30" r="15.5" fill="#52b788" />
-        <rect x="19" y="18" width="26" height="24" rx="12" fill="#ffdfc4" />
-        {/* Bangs */}
-        <path
-          d="M19 26C20 19 25 16 32 16C39 16 44 19 45 26C41 22.5 36.5 21.5 32 22C27.5 22.5 23 22.5 19 26Z"
-          fill="#4a312c"
-        />
-        {/* Rosy Cheeks */}
-        <ellipse cx="22.8" cy="33" rx="3.2" ry="1.9" fill="#ff9eb5" fillOpacity="0.72" />
-        <ellipse cx="41.2" cy="33" rx="3.2" ry="1.9" fill="#ff9eb5" fillOpacity="0.72" />
-        {/* Sparkly Eyes */}
-        <circle cx="26.2" cy="29.5" r="2.6" fill="#3a2420" />
-        <circle cx="37.8" cy="29.5" r="2.6" fill="#3a2420" />
-        <circle cx="25.3" cy="28.5" r="0.95" fill="#ffffff" />
-        <circle cx="36.9" cy="28.5" r="0.95" fill="#ffffff" />
-        <circle cx="27.2" cy="30.4" r="0.45" fill="#ffffff" />
-        <circle cx="38.8" cy="30.4" r="0.45" fill="#ffffff" />
-        {/* Cute Cat-like Smile */}
-        <path
-          d="M28.5 34.2Q30.2 36.2 32 34.4Q33.8 36.2 35.5 34.2"
-          stroke="#7a4438"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    );
-  }
-
-  // Seat 1: Strawberry Blush & Round Glasses Chibi
-  if (variant === 1) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 64 64"
-        fill="none"
-        aria-hidden="true"
-        className="h-full w-full"
-      >
-        <rect width="64" height="64" rx="32" fill="#ffe0ea" />
-        <circle cx="32" cy="30" r="24" fill="#ffc2d4" fillOpacity="0.55" />
-        {/* Back Hair */}
-        <circle cx="32" cy="28" r="16.5" fill="#523532" />
-        {/* Strawberry Cardigan */}
-        <path
-          d="M11 64C13 49 21 44 32 44C43 44 51 49 53 64H11Z"
-          fill="#ff7597"
-        />
-        <path d="M26 45L32 52L38 45" fill="#fff8f2" />
-        <circle cx="32" cy="55.5" r="1.5" fill="#fff8f2" />
-        {/* Chibi Face */}
-        <rect x="19" y="17" width="26" height="25" rx="12.5" fill="#f7cfa9" />
-        {/* Cute Bangs + Cream Hairclip */}
-        <path
-          d="M18.5 26C19 17.5 24.5 14 32 14C39.5 14 45 17.5 45.5 26C42 21.5 37 20.5 32 21C27 21.5 22 21.5 18.5 26Z"
-          fill="#523532"
-        />
-        <rect x="37" y="18.5" width="5.5" height="2.4" rx="1.2" transform="rotate(14 37 18.5)" fill="#ffe599" />
-        {/* Rosy Cheeks */}
-        <ellipse cx="22.5" cy="33.5" rx="3.2" ry="1.9" fill="#ff8fab" fillOpacity="0.72" />
-        <ellipse cx="41.5" cy="33.5" rx="3.2" ry="1.9" fill="#ff8fab" fillOpacity="0.72" />
-        {/* Oversized Round Glasses + Sparkly Eyes */}
-        <circle cx="26" cy="29.5" r="4.6" fill="#ffffff" fillOpacity="0.35" stroke="#5c3a35" strokeWidth="1.6" />
-        <circle cx="38" cy="29.5" r="4.6" fill="#ffffff" fillOpacity="0.35" stroke="#5c3a35" strokeWidth="1.6" />
-        <path d="M30.6 29.5H33.4" stroke="#5c3a35" strokeWidth="1.5" />
-        <circle cx="26" cy="29.5" r="2.2" fill="#3a2420" />
-        <circle cx="38" cy="29.5" r="2.2" fill="#3a2420" />
-        <circle cx="25.2" cy="28.6" r="0.85" fill="#ffffff" />
-        <circle cx="37.2" cy="28.6" r="0.85" fill="#ffffff" />
-        {/* Sweet Smile */}
-        <path
-          d="M28.5 35.2C30.2 37.2 33.8 37.2 35.5 35.2"
-          stroke="#7a4438"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
-
-  // Seat 2: Sunny Sky & Bear-Ear Cap Chibi
-  if (variant === 2) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 64 64"
-        fill="none"
-        aria-hidden="true"
-        className="h-full w-full"
-      >
-        <rect width="64" height="64" rx="32" fill="#d7ecff" />
-        <circle cx="32" cy="30" r="24" fill="#b8dcff" fillOpacity="0.6" />
-        {/* Sky Sweater */}
-        <path
-          d="M11 64C13 49 21 44 32 44C43 44 51 49 53 64H11Z"
-          fill="#6c9bf5"
-        />
-        <path d="M24 46Q32 52 40 46" stroke="#fff8f0" strokeWidth="2.2" strokeLinecap="round" />
-        {/* Cute Round Ears on Cap */}
-        <circle cx="20.5" cy="15.5" r="4.2" fill="#ffc857" />
-        <circle cx="20.5" cy="15.5" r="2" fill="#ff9eb5" />
-        <circle cx="43.5" cy="15.5" r="4.2" fill="#ffc857" />
-        <circle cx="43.5" cy="15.5" r="2" fill="#ff9eb5" />
-        {/* Face */}
-        <rect x="19" y="18" width="26" height="24" rx="12" fill="#f9d5b5" />
-        {/* Sunny Cap */}
-        <path
-          d="M18.5 23.5C19 15 24.5 11.5 32 11.5C39.5 11.5 45 15 45.5 23.5H18.5Z"
-          fill="#ffc857"
-        />
-        <path d="M16.5 22.8H47.5C47 25 44 25.4 41 24.8H20C17.8 24.8 16.5 24.1 16.5 22.8Z" fill="#f0a830" />
-        {/* Rosy Cheeks */}
-        <ellipse cx="22.8" cy="33.2" rx="3.2" ry="1.9" fill="#ff9eb5" fillOpacity="0.72" />
-        <ellipse cx="41.2" cy="33.2" rx="3.2" ry="1.9" fill="#ff9eb5" fillOpacity="0.72" />
-        {/* Sparkly Happy Eyes */}
-        <circle cx="26.2" cy="29.6" r="2.5" fill="#3a2420" />
-        <circle cx="37.8" cy="29.6" r="2.5" fill="#3a2420" />
-        <circle cx="25.3" cy="28.7" r="0.9" fill="#ffffff" />
-        <circle cx="36.9" cy="28.7" r="0.9" fill="#ffffff" />
-        {/* Big Cheerful Grin */}
-        <path
-          d="M27.5 34.2C29.3 37.4 34.7 37.4 36.5 34.2Z"
-          fill="#ff8fab"
-          stroke="#7a4438"
-          strokeWidth="1.3"
-          strokeLinejoin="round"
-        />
-      </svg>
-    );
-  }
-
-  // Seat 3: Honey Lavender Cozy Chibi with Cute Tiny Mustache
   return (
     <svg
       width={size}
@@ -212,47 +71,196 @@ export function SeatAvatarGraphic({
       aria-hidden="true"
       className="h-full w-full"
     >
-      <rect width="64" height="64" rx="32" fill="#ede4ff" />
-      <circle cx="32" cy="30" r="24" fill="#d9c7ff" fillOpacity="0.6" />
-      {/* Cozy Lavender Panjabi + Cream Scarf */}
+      <rect width="64" height="64" rx="32" fill={bgBase} />
+      <circle cx="32" cy="30" r="24" fill={bgRing} fillOpacity="0.62" />
+
+      {/* Back Hair / Ears Behind Face */}
+      {cfg.character === 'kitty' && (
+        <>
+          <path d="M18 22L16 9.5L27 16Z" fill={outfitFill} />
+          <path d="M19.5 19.5L18.5 13L24.5 16.5Z" fill="#ffb3c6" />
+          <path d="M46 22L48 9.5L37 16Z" fill={outfitFill} />
+          <path d="M44.5 19.5L45.5 13L39.5 16.5Z" fill="#ffb3c6" />
+          <circle cx="32" cy="30" r="15.5" fill={outfitFill} />
+        </>
+      )}
+      {cfg.character === 'bunny' && (
+        <>
+          <rect x="20" y="3.5" width="7.5" height="19" rx="3.75" transform="rotate(-8 20 3.5)" fill="#fff8f2" stroke={outfitFill} strokeWidth="2" />
+          <rect x="22" y="7" width="3.5" height="11" rx="1.75" transform="rotate(-8 22 7)" fill="#ffb3c6" />
+          <rect x="36.5" y="3.5" width="7.5" height="19" rx="3.75" transform="rotate(8 36.5 3.5)" fill="#fff8f2" stroke={outfitFill} strokeWidth="2" />
+          <rect x="38.5" y="7" width="3.5" height="11" rx="1.75" transform="rotate(8 38.5 7)" fill="#ffb3c6" />
+          <circle cx="32" cy="28" r="15.5" fill="#4f3531" />
+        </>
+      )}
+      {cfg.character === 'glasses' && (
+        <circle cx="32" cy="28" r="16.5" fill="#523532" />
+      )}
+      {cfg.character === 'dapper' && (
+        <>
+          <circle cx="32" cy="25" r="15.5" fill="#47332e" />
+          <circle cx="22" cy="20" r="4.5" fill="#47332e" />
+          <circle cx="42" cy="20" r="4.5" fill="#47332e" />
+        </>
+      )}
+      {cfg.character === 'crown' && (
+        <circle cx="32" cy="28" r="16" fill="#47312c" />
+      )}
+      {cfg.character === 'bearcap' && (
+        <>
+          <circle cx="20.5" cy="15.5" r="4.2" fill="#ffc857" />
+          <circle cx="20.5" cy="15.5" r="2" fill="#ff9eb5" />
+          <circle cx="43.5" cy="15.5" r="4.2" fill="#ffc857" />
+          <circle cx="43.5" cy="15.5" r="2" fill="#ff9eb5" />
+        </>
+      )}
+
+      {/* Shoulders & Outfit */}
       <path
         d="M11 64C13 49 21 44 32 44C43 44 51 49 53 64H11Z"
-        fill="#8b7fd0"
+        fill={outfitFill}
       />
-      <rect x="21" y="44" width="22" height="5.5" rx="2.75" fill="#ffe599" />
-      <rect x="35" y="47" width="5.5" height="12" rx="2.5" fill="#ffd166" />
-      {/* Fluffy Hair */}
-      <circle cx="32" cy="25" r="15.5" fill="#47332e" />
-      <circle cx="22" cy="20" r="4.5" fill="#47332e" />
-      <circle cx="42" cy="20" r="4.5" fill="#47332e" />
-      {/* Chibi Face */}
-      <rect x="19" y="18" width="26" height="24" rx="12" fill="#f0c49e" />
-      {/* Soft Hair Bangs */}
-      <path
-        d="M19 25C20 17.5 25 14.5 32 14.5C39 14.5 44 17.5 45 25C41.5 21.5 37 20 32 20C27 20 22.5 21.5 19 25Z"
-        fill="#47332e"
-      />
+      {cfg.character === 'kitty' && (
+        <>
+          <path d="M27 46V55M37 46V55" stroke="#fff8f0" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="27" cy="56" r="1.6" fill="#ffe599" />
+          <circle cx="37" cy="56" r="1.6" fill="#ffe599" />
+        </>
+      )}
+      {cfg.character === 'glasses' && (
+        <>
+          <path d="M26 45L32 52L38 45" fill="#fff8f2" />
+          <circle cx="32" cy="55.5" r="1.5" fill="#fff8f2" />
+        </>
+      )}
+      {(cfg.character === 'bearcap' || cfg.character === 'bunny' || cfg.character === 'crown') && (
+        <path
+          d="M24 46Q32 52 40 46"
+          stroke="#fff8f0"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+      )}
+      {cfg.character === 'dapper' && (
+        <>
+          <rect x="21" y="44" width="22" height="5.5" rx="2.75" fill="#ffe599" />
+          <rect x="35" y="47" width="5.5" height="12" rx="2.5" fill="#ffd166" />
+        </>
+      )}
+
+      {/* Chibi Head */}
+      <rect x="19" y="17.5" width="26" height="24.5" rx="12" fill={skinFill} />
+
+      {/* Top Hair / Hat / Crown */}
+      {cfg.character === 'kitty' && (
+        <path
+          d="M19 26C20 19 25 16 32 16C39 16 44 19 45 26C41 22.5 36.5 21.5 32 22C27.5 22.5 23 22.5 19 26Z"
+          fill="#4a312c"
+        />
+      )}
+      {cfg.character === 'glasses' && (
+        <>
+          <path
+            d="M18.5 26C19 17.5 24.5 14 32 14C39.5 14 45 17.5 45.5 26C42 21.5 37 20.5 32 21C27 21.5 22 21.5 18.5 26Z"
+            fill="#523532"
+          />
+          <rect x="37" y="18.5" width="5.5" height="2.4" rx="1.2" transform="rotate(14 37 18.5)" fill="#ffe599" />
+        </>
+      )}
+      {cfg.character === 'bearcap' && (
+        <>
+          <path
+            d="M18.5 23.5C19 15 24.5 11.5 32 11.5C39.5 11.5 45 15 45.5 23.5H18.5Z"
+            fill="#ffc857"
+          />
+          <path d="M16.5 22.8H47.5C47 25 44 25.4 41 24.8H20C17.8 24.8 16.5 24.1 16.5 22.8Z" fill="#f0a830" />
+        </>
+      )}
+      {(cfg.character === 'dapper' || cfg.character === 'bunny' || cfg.character === 'crown') && (
+        <path
+          d="M19 25C20 17.5 25 14.5 32 14.5C39 14.5 44 17.5 45 25C41.5 21.5 37 20 32 20C27 20 22.5 21.5 19 25Z"
+          fill="#47332e"
+        />
+      )}
+      {cfg.character === 'crown' && (
+        <>
+          <path d="M22 17L24.5 9.5L30 14L32 8L34 14L39.5 9.5L42 17H22Z" fill="#ffc857" stroke="#e09f2d" strokeWidth="1.2" strokeLinejoin="round" />
+          <circle cx="32" cy="14" r="1.4" fill="#ff7597" />
+        </>
+      )}
+
       {/* Rosy Cheeks */}
-      <ellipse cx="22.8" cy="33" rx="3.2" ry="1.9" fill="#ff9eb5" fillOpacity="0.72" />
-      <ellipse cx="41.2" cy="33" rx="3.2" ry="1.9" fill="#ff9eb5" fillOpacity="0.72" />
-      {/* Happy Sparkly Eyes */}
-      <circle cx="26.2" cy="29" r="2.4" fill="#3a2420" />
-      <circle cx="37.8" cy="29" r="2.4" fill="#3a2420" />
-      <circle cx="25.4" cy="28.1" r="0.9" fill="#ffffff" />
-      <circle cx="37" cy="28.1" r="0.9" fill="#ffffff" />
-      {/* Cute Dapper Tiny Mustache + Smile */}
-      <path
-        d="M26.5 33.8C28.3 32.1 30.8 32.3 32 33.3C33.2 32.3 35.7 32.1 37.5 33.8"
-        stroke="#47332e"
-        strokeWidth="2.1"
-        strokeLinecap="round"
-      />
-      <path
-        d="M29.5 36.2Q32 37.8 34.5 36.2"
-        stroke="#7a4438"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
+      <ellipse cx="22.8" cy="33.2" rx="3.2" ry="1.9" fill="#ff9eb5" fillOpacity="0.72" />
+      <ellipse cx="41.2" cy="33.2" rx="3.2" ry="1.9" fill="#ff9eb5" fillOpacity="0.72" />
+
+      {/* Sparkly Eyes */}
+      <circle cx="26.2" cy="29.5" r="2.5" fill="#3a2420" />
+      <circle cx="37.8" cy="29.5" r="2.5" fill="#3a2420" />
+      <circle cx="25.3" cy="28.6" r="0.9" fill="#ffffff" />
+      <circle cx="36.9" cy="28.6" r="0.9" fill="#ffffff" />
+      <circle cx="27.1" cy="30.3" r="0.45" fill="#ffffff" />
+      <circle cx="38.7" cy="30.3" r="0.45" fill="#ffffff" />
+
+      {/* Glasses Overlay */}
+      {cfg.character === 'glasses' && (
+        <>
+          <circle cx="26" cy="29.5" r="4.6" fill="#ffffff" fillOpacity="0.28" stroke="#5c3a35" strokeWidth="1.6" />
+          <circle cx="38" cy="29.5" r="4.6" fill="#ffffff" fillOpacity="0.28" stroke="#5c3a35" strokeWidth="1.6" />
+          <path d="M30.6 29.5H33.4" stroke="#5c3a35" strokeWidth="1.5" />
+        </>
+      )}
+
+      {/* Mouth / Facial Expression */}
+      {(cfg.character === 'kitty' || cfg.character === 'bunny') && (
+        <path
+          d="M28.5 34.2Q30.2 36.2 32 34.4Q33.8 36.2 35.5 34.2"
+          stroke="#7a4438"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+      {cfg.character === 'glasses' && (
+        <path
+          d="M28.5 35.2C30.2 37.2 33.8 37.2 35.5 35.2"
+          stroke="#7a4438"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+      )}
+      {(cfg.character === 'bearcap' || cfg.character === 'crown') && (
+        <path
+          d="M27.5 34.2C29.3 37.4 34.7 37.4 36.5 34.2Z"
+          fill="#ff8fab"
+          stroke="#7a4438"
+          strokeWidth="1.3"
+          strokeLinejoin="round"
+        />
+      )}
+      {cfg.character === 'dapper' && (
+        <>
+          <path
+            d="M26.5 33.8C28.3 32.1 30.8 32.3 32 33.3C33.2 32.3 35.7 32.1 37.5 33.8"
+            stroke="#47332e"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+          />
+          <path
+            d="M29.5 36.2Q32 37.8 34.5 36.2"
+            stroke="#7a4438"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+          />
+        </>
+      )}
+
+      {/* Subtle Bot Antenna Indicator for AI seats */}
+      {isAi && (
+        <>
+          <line x1="51" y1="18" x2="53.5" y2="10.5" stroke="#5c4799" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="53.5" cy="9.5" r="2.6" fill="#6ee7b7" stroke="#4a3780" strokeWidth="1.4" />
+        </>
+      )}
     </svg>
   );
 }
@@ -351,14 +359,17 @@ function CapturedStack({
   tricksWon,
   mini = false,
   className = '',
+  lang = DEFAULT_LANG,
 }: {
   seatIndex: number;
   capturedPoints: number;
   tricksWon: number;
   mini?: boolean;
   className?: string;
+  lang?: Lang;
 }) {
   const isEmpty = capturedPoints === 0 && tricksWon === 0;
+  const shownNum = formatNum(capturedPoints, lang);
   const depthClass =
     tricksWon >= 3
       ? 'captured-deck-3d-tall'
@@ -372,7 +383,7 @@ function CapturedStack({
         <div
           data-testid={`captured-stack-${seatIndex}`}
           data-empty="true"
-          aria-label="Captured points: 0"
+          aria-label={`Captured points: ${shownNum}`}
           className={`inline-flex h-[22px] w-[17px] items-center justify-center rounded-[6px] border border-dashed border-[#c79ba6]/65 bg-[#fff5f0]/65 ${className}`}
         />
       );
@@ -383,10 +394,10 @@ function CapturedStack({
         key={capturedPoints}
         data-testid={`captured-stack-${seatIndex}`}
         data-empty="false"
-        aria-label={`Captured points: ${capturedPoints}`}
+        aria-label={`Captured points: ${shownNum}`}
         className={`animate-points-pop relative inline-flex h-[22px] min-w-[26px] items-center justify-center rounded-[7px] border border-[#fff8f2] bg-gradient-to-b from-[#8b7fd0] to-[#6357a8] px-1.5 text-[11px] font-black tabular-nums leading-none text-white shadow-[0_2px_0_#ffe9dc,0_4px_7px_rgba(96,72,128,0.3)] ${className}`}
       >
-        {capturedPoints}
+        {shownNum}
       </div>
     );
   }
@@ -396,7 +407,7 @@ function CapturedStack({
       <div
         data-testid={`captured-stack-${seatIndex}`}
         data-empty="true"
-        aria-label="Captured points: 0"
+        aria-label={`Captured points: ${shownNum}`}
         className={`relative flex items-center justify-center ${className}`}
       >
         <div className="flex h-[62px] w-[46px] items-center justify-center rounded-[11px] border-2 border-dashed border-[#fffaf2]/80 bg-[#fffaf2]/28 transition-all duration-300 lg:h-[70px] lg:w-[52px]">
@@ -410,7 +421,7 @@ function CapturedStack({
     <div
       data-testid={`captured-stack-${seatIndex}`}
       data-empty="false"
-      aria-label={`Captured points: ${capturedPoints}`}
+      aria-label={`Captured points: ${shownNum}`}
       className={`relative flex items-center justify-center ${className}`}
     >
       {/* Portrait starry-lavender stacked card deck growing thicker with tricks won */}
@@ -422,7 +433,7 @@ function CapturedStack({
         <div className="pointer-events-none absolute inset-[3.5px] rounded-[7px] border border-dashed border-[#fff5e4]/50" />
         {/* Crisp high-contrast accumulated points numeral only */}
         <span className="relative z-10 rounded px-1.5 py-0.5 text-[16px] font-black tabular-nums leading-none tracking-tight text-white drop-shadow-[0_1.5px_2px_rgba(45,32,82,0.55)] lg:text-[18px]">
-          {capturedPoints}
+          {shownNum}
         </span>
       </div>
     </div>
@@ -507,7 +518,7 @@ function SeatHubInner({
   seat,
   position,
   isMe,
-  isHost,
+  isHost: _isHost,
   isActiveTurn,
   isSpeaking,
   compactMobile = false,
@@ -517,8 +528,16 @@ function SeatHubInner({
   displayedCapturedPoints,
   displayedTricksWon,
   visibleHandCount,
+  rank = null,
+  lang = DEFAULT_LANG,
 }: SeatHubProps) {
-  const displayName = seat.username || `Seat ${seat.seatIndex + 1}`;
+  void _isHost;
+  const t = TEXTS[lang];
+  const fallbackName =
+    lang === 'bn'
+      ? `সিট ${formatNum(seat.seatIndex + 1, lang)}`
+      : `Seat ${seat.seatIndex + 1}`;
+  const displayName = localizeDisplayName(seat.username || fallbackName, lang);
   const remainingCards =
     visibleHandCount !== undefined
       ? Math.min(seat.hand.length, visibleHandCount)
@@ -527,14 +546,17 @@ function SeatHubInner({
   const shownTricks = displayedTricksWon ?? seat.tricksWon;
 
   const callLabel =
-    seat.call === null ? '--' : maskCall ? '✓' : String(seat.call);
+    seat.call === null ? '--' : maskCall ? '✓' : formatNum(seat.call, lang);
+  const scoreLabel = formatNum(seat.totalScore, lang);
   const callMade =
     !maskCall && seat.call !== null && shownPoints >= seat.call;
 
   const idleRingClasses = isSpeaking
     ? 'ring-2 ring-emerald-400'
     : !isActiveTurn
-      ? 'ring-2 ring-[#fff8f2] shadow-sm'
+      ? rank === 1
+        ? 'ring-2 ring-[#ffc857] shadow-[0_0_12px_rgba(255,200,87,0.5)]'
+        : 'ring-2 ring-[#fff8f2] shadow-sm'
       : '';
 
   /* =========================================================================
@@ -565,9 +587,14 @@ function SeatHubInner({
               turnProgress={turnProgress}
               isUrgent={isTimerUrgent}
             />
-            {isHost && (
-              <span className="absolute -right-1 -top-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#ffc857] text-[#5e3a16] shadow-sm ring-1 ring-white">
-                <Crown className="h-2.5 w-2.5" aria-hidden="true" />
+            {rank != null && rank >= 1 && (
+              <span className="absolute -right-1 -top-1 z-10 scale-90">
+                <RankBadge
+                  rank={rank}
+                  variant="avatar"
+                  lang={lang}
+                  testId={`seat-rank-badge-${seat.seatIndex}`}
+                />
               </span>
             )}
           </div>
@@ -576,7 +603,7 @@ function SeatHubInner({
             <div className="flex items-center gap-1.5">
               <span className="max-w-[70px] truncate text-[11px] font-bold text-[#4a2e2b] sm:max-w-[82px] sm:text-xs">
                 {displayName}
-                {isMe ? ' (Me)' : ''}
+                {isMe ? t.meTag : ''}
               </span>
               {position === 'top' && (
                 <OpponentNavyFan
@@ -590,25 +617,26 @@ function SeatHubInner({
                 capturedPoints={shownPoints}
                 tricksWon={shownTricks}
                 mini
+                lang={lang}
               />
             </div>
 
             <div className="mt-0.5 flex items-center gap-2 whitespace-nowrap text-[9.5px] font-semibold text-[#7d5a58] sm:text-[10px]">
               <span
-                title="Call"
-                aria-label={`Call ${callLabel}`}
+                title={t.callWord}
+                aria-label={`${t.callWord} ${callLabel}`}
                 className={`inline-flex items-center gap-0.5 ${callMade ? 'font-bold text-[#228b5b]' : ''}`}
               >
                 <Target className="h-2.5 w-2.5 shrink-0 text-[#34b37e]" aria-hidden="true" />
                 {callLabel}
               </span>
               <span
-                title="Score"
-                aria-label={`Score ${seat.totalScore}`}
-                className="inline-flex items-center gap-0.5"
+                title={t.scoreWord}
+                aria-label={`${t.scoreWord} ${scoreLabel}`}
+                className={`inline-flex items-center gap-0.5 ${seat.totalScore < 0 ? 'font-bold text-[#d94f72]' : ''}`}
               >
                 <Trophy className="h-2.5 w-2.5 shrink-0 text-[#f59e0b]" aria-hidden="true" />
-                {seat.totalScore}
+                {scoreLabel}
               </span>
             </div>
           </div>
@@ -639,6 +667,16 @@ function SeatHubInner({
             turnProgress={turnProgress}
             isUrgent={isTimerUrgent}
           />
+          {rank != null && rank >= 1 && (
+            <span className="absolute -right-1 -top-1 z-10 scale-90">
+              <RankBadge
+                rank={rank}
+                variant="avatar"
+                lang={lang}
+                testId={`seat-rank-badge-${seat.seatIndex}`}
+              />
+            </span>
+          )}
         </div>
 
         <span className="w-full truncate text-[10.5px] font-bold leading-tight text-[#4a2e2b] sm:text-[11px]">
@@ -654,20 +692,20 @@ function SeatHubInner({
 
         <div className="flex flex-col gap-0.5 text-[8.5px] font-semibold leading-tight text-[#7d5a58] sm:text-[9px]">
           <span
-            title="Call"
-            aria-label={`Call ${callLabel}`}
+            title={t.callWord}
+            aria-label={`${t.callWord} ${callLabel}`}
             className={`inline-flex items-center justify-center gap-0.5 ${callMade ? 'font-bold text-[#228b5b]' : ''}`}
           >
             <Target className="h-2.5 w-2.5 shrink-0 text-[#34b37e]" aria-hidden="true" />
             {callLabel}
           </span>
           <span
-            title="Score"
-            aria-label={`Score ${seat.totalScore}`}
-            className="inline-flex items-center justify-center gap-0.5"
+            title={t.scoreWord}
+            aria-label={`${t.scoreWord} ${scoreLabel}`}
+            className={`inline-flex items-center justify-center gap-0.5 ${seat.totalScore < 0 ? 'font-bold text-[#d94f72]' : ''}`}
           >
             <Trophy className="h-2.5 w-2.5 shrink-0 text-[#f59e0b]" aria-hidden="true" />
-            {seat.totalScore}
+            {scoreLabel}
           </span>
         </div>
 
@@ -676,6 +714,7 @@ function SeatHubInner({
           capturedPoints={shownPoints}
           tricksWon={shownTricks}
           mini
+          lang={lang}
         />
       </div>
     );
@@ -702,19 +741,20 @@ function SeatHubInner({
           isUrgent={isTimerUrgent}
         />
 
-        {isHost && (
-          <span
-            title="Room Host"
-            aria-label="Room Host"
-            className="absolute -right-1 -top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#ffc857] text-[#5e3a16] shadow ring-2 ring-[#fff9f3]"
-          >
-            <Crown className="h-3 w-3" aria-hidden="true" />
+        {rank != null && rank >= 1 && (
+          <span className="absolute -right-1 -top-1 z-10">
+            <RankBadge
+              rank={rank}
+              variant="avatar"
+              lang={lang}
+              testId={`seat-rank-badge-${seat.seatIndex}`}
+            />
           </span>
         )}
 
         {isMe && (
           <span
-            aria-label={isSpeaking ? 'Microphone live' : 'Microphone muted'}
+            aria-label={isSpeaking ? t.openMicOn : t.openMicMuted}
             className={`absolute -bottom-0.5 -right-0.5 z-10 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#fff9f3] shadow-sm ${
               isSpeaking
                 ? 'bg-[#34b37e] text-white'
@@ -731,7 +771,7 @@ function SeatHubInner({
 
         {!seat.isOnline && seat.type === 'HUMAN' && (
           <span
-            title="Offline"
+            title={t.offline}
             className="absolute -left-1 -top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-[#f25c84] text-white ring-2 ring-[#fff9f3]"
           >
             <WifiOff className="h-3 w-3" aria-hidden="true" />
@@ -742,14 +782,14 @@ function SeatHubInner({
       <div className="mt-1.5 text-center">
         <span className="glass-pill inline-block max-w-[134px] truncate rounded-full px-2.5 py-0.5 text-xs font-bold text-[#4a2e2b]">
           {displayName}
-          {isMe ? ' (Me)' : ''}
+          {isMe ? t.meTag : ''}
         </span>
       </div>
 
       <div className="mt-1 flex items-center justify-center gap-1.5">
         <span
-          title="Call"
-          aria-label={`Call ${callLabel}`}
+          title={t.callWord}
+          aria-label={`${t.callWord} ${callLabel}`}
           className={`glass-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold transition-colors ${
             callMade
               ? '!border-[#52b788] !bg-[#e6f9ef] text-[#1f7a51]'
@@ -760,12 +800,14 @@ function SeatHubInner({
           <span>{callLabel}</span>
         </span>
         <span
-          title="Score"
-          aria-label={`Score ${seat.totalScore}`}
-          className="glass-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold text-[#5c3d3a]"
+          title={t.scoreWord}
+          aria-label={`${t.scoreWord} ${scoreLabel}`}
+          className={`glass-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+            seat.totalScore < 0 ? 'text-[#d94f72]' : 'text-[#5c3d3a]'
+          }`}
         >
           <Trophy className="h-3 w-3 shrink-0 text-[#f59e0b]" aria-hidden="true" />
-          <span>{seat.totalScore}</span>
+          <span>{scoreLabel}</span>
         </span>
       </div>
     </div>
@@ -787,6 +829,7 @@ function SeatHubInner({
             seatIndex={seat.seatIndex}
             capturedPoints={shownPoints}
             tricksWon={shownTricks}
+            lang={lang}
           />
         </div>
       </div>
@@ -808,6 +851,7 @@ function SeatHubInner({
             seatIndex={seat.seatIndex}
             capturedPoints={shownPoints}
             tricksWon={shownTricks}
+            lang={lang}
           />
           <OpponentNavyFan position="left" remainingCards={remainingCards} />
         </div>
@@ -830,6 +874,7 @@ function SeatHubInner({
             seatIndex={seat.seatIndex}
             capturedPoints={shownPoints}
             tricksWon={shownTricks}
+            lang={lang}
           />
         </div>
         {avatarBlock}
@@ -851,6 +896,7 @@ function SeatHubInner({
         seatIndex={seat.seatIndex}
         capturedPoints={shownPoints}
         tricksWon={shownTricks}
+        lang={lang}
       />
     </div>
   );

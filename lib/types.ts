@@ -43,8 +43,41 @@ export type GamePhase =
 
 export type SeatType = 'EMPTY' | 'HUMAN' | 'AI';
 
-export const BOT_NAMES = ['Siam', 'Apon', 'Nabil'] as const;
+export const BOT_NAMES = ['Siam Bot', 'Apon Bot', 'Nabil Bot'] as const;
 export type BotName = (typeof BOT_NAMES)[number];
+
+export type AvatarCharacter =
+  | 'kitty'
+  | 'glasses'
+  | 'bearcap'
+  | 'dapper'
+  | 'bunny'
+  | 'crown';
+
+export type AvatarBg =
+  | 'mint'
+  | 'pink'
+  | 'sky'
+  | 'lavender'
+  | 'sunny'
+  | 'peach';
+
+export type AvatarOutfit =
+  | 'emerald'
+  | 'coral'
+  | 'royal'
+  | 'plum'
+  | 'amber'
+  | 'teal';
+
+export type AvatarSkin = 'fair' | 'warm' | 'wheat' | 'tan';
+
+export interface AvatarConfig {
+  character: AvatarCharacter;
+  bg: AvatarBg;
+  outfit: AvatarOutfit;
+  skin: AvatarSkin;
+}
 
 export const QUICK_CALL_VALUES = [50, 100, 150, 200, 250, 300, 400, 500] as const;
 export type QuickCallValue = (typeof QUICK_CALL_VALUES)[number];
@@ -62,6 +95,7 @@ export interface SeatState {
   type: SeatType;
   clientId: string | null;
   username: string;
+  avatar?: AvatarConfig;
   hand: CardValue[];
   call: number | null;
   capturedPoints: number;
@@ -144,6 +178,7 @@ export interface PresenceMeta {
   clientId: string;
   seatIndex: SeatIndex | null;
   username: string;
+  avatar?: AvatarConfig;
   joinedAt: number;
 }
 
@@ -160,6 +195,7 @@ export type SyncBroadcastEvent =
       type: 'JOIN_REQUEST';
       senderId: string;
       username: string;
+      avatar?: AvatarConfig;
       preferredSeat?: SeatIndex | null;
     }
   | {
@@ -204,6 +240,7 @@ export interface LiveKitTokenErrorResponse {
 export interface UseGameSyncOptions {
   roomCode: string;
   username: string;
+  avatar?: AvatarConfig;
   enabled: boolean;
   /** When true (e.g. joining via invite link or Join button), do not create a brand-new room if no host exists. */
   joinOnly?: boolean;

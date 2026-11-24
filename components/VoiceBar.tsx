@@ -28,7 +28,14 @@ import {
 } from 'lucide-react';
 import { getPublicEnv } from '@/lib/env';
 import {
-  BANTER_CHIPS,
+  DEFAULT_LANG,
+  formatNum,
+  getBanterChips,
+  localizeDisplayName,
+  TEXTS,
+  type Lang,
+} from '@/lib/i18n';
+import {
   type ChatMessage,
   type LiveKitTokenResponse,
   type SpeakingMap,
@@ -60,6 +67,7 @@ export interface VoiceBarProps {
   compact?: boolean;
   onCopyRoomCode?: () => void;
   copiedRoom?: boolean;
+  lang?: Lang;
 }
 
 interface RtpEncodingParametersLike {
@@ -328,7 +336,10 @@ export function VoiceBar({
   compact = false,
   onCopyRoomCode,
   copiedRoom = false,
+  lang = DEFAULT_LANG,
 }: VoiceBarProps) {
+  const t = TEXTS[lang];
+  const banterChips = getBanterChips(lang);
   const [lowDataOverride, setLowDataOverride] =
     useState<ToggleOverrideState | null>(null);
   const [rainOverride, setRainOverride] =
@@ -660,7 +671,7 @@ export function VoiceBar({
           <section
             data-testid="chat-drawer"
             role="region"
-            aria-label="Bangla and Banglish Chat Drawer"
+            aria-label={t.tableChat}
             className="animate-panel-enter mb-2.5 flex w-[295px] flex-col overflow-hidden rounded-[26px] border-2 border-[#f4cbd5] bg-[#fffaf6]/98 text-[#4a2e2b] shadow-[0_14px_34px_rgba(148,88,100,0.22)] backdrop-blur-md sm:w-[330px]"
           >
             {/* Header */}
@@ -668,18 +679,18 @@ export function VoiceBar({
               <div className="flex items-center gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5 text-[#f25c84]" />
                 <span className="text-xs font-extrabold tracking-wide text-[#4a2e2b]">
-                  Table Chat
+                  {t.tableChat}
                 </span>
                 {displayedMessages.length > 0 && (
                   <span className="rounded-full bg-[#ffdce5] px-1.5 py-0.5 text-[10px] font-bold text-[#c73e65]">
-                    {displayedMessages.length}
+                    {formatNum(displayedMessages.length, lang)}
                   </span>
                 )}
               </div>
               <button
                 type="button"
                 onClick={handleToggleChatDrawer}
-                aria-label="Close chat"
+                aria-label={t.closeChat}
                 className="rounded-full px-1.5 py-0.5 text-xs font-bold text-[#9c6f74] transition hover:bg-[#ffdce5] hover:text-[#4a2e2b]"
               >
                 ✕
@@ -694,7 +705,7 @@ export function VoiceBar({
             >
               {displayedMessages.length === 0 ? (
                 <li className="my-auto py-4 text-center text-[11px] font-medium text-[#9e7774]">
-                  Send a quick Bangla banter or message below.
+                  {t.emptyChatCompact}
                 </li>
               ) : (
                 displayedMessages.map((msg) => {
@@ -710,7 +721,9 @@ export function VoiceBar({
                     >
                       <div className="mb-0.5 flex items-center gap-1.5 px-1 text-[10px] text-[#9e7774]">
                         <span className="font-bold text-[#d94f72]">
-                          {isMine ? 'You' : msg.username}
+                          {isMine
+                            ? t.you
+                            : localizeDisplayName(msg.username, lang)}
                         </span>
                         <span className="opacity-70">
                           {formatMsgTime(msg.timestamp)}
@@ -736,7 +749,7 @@ export function VoiceBar({
               data-testid="banter-chips-row"
               className="flex flex-wrap gap-1 border-t border-[#f5d8df] bg-[#fff5f7] px-2.5 py-2"
             >
-              {BANTER_CHIPS.map((chip) => (
+              {banterChips.map((chip) => (
                 <button
                   key={chip}
                   type="button"
@@ -756,8 +769,8 @@ export function VoiceBar({
             >
               <input
                 type="text"
-                aria-label="Chat message"
-                placeholder="Type Bangla or Banglish…"
+                aria-label={t.chatPlaceholder}
+                placeholder={t.chatPlaceholder}
                 maxLength={MAX_CHAT_MESSAGE_LENGTH}
                 value={chatDraft}
                 onChange={(e) => setChatDraft(e.target.value)}
@@ -766,7 +779,7 @@ export function VoiceBar({
               />
               <button
                 type="submit"
-                aria-label="Send"
+                aria-label={t.send}
                 data-testid="chat-send-button"
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7597] text-white shadow-[0_2px_0_#d94f72] transition hover:bg-[#ff6188] active:scale-95"
               >
@@ -782,7 +795,7 @@ export function VoiceBar({
             <div className="flex items-center justify-between text-[11px] text-[#8c6460]">
               <span className="inline-flex items-center gap-1.5 font-bold text-[#d94f72]">
                 <Radio className="h-3.5 w-3.5" />
-                {isFallbackMode ? 'Voice: Local Fallback' : 'Voice: Connected'}
+                {isFallbackMode ? t.voiceLocal : t.voiceConnected}
               </span>
               <span className="font-semibold opacity-80">
                 {effectiveLowDataMode ? '16kbps' : '24kbps'}
@@ -792,7 +805,7 @@ export function VoiceBar({
             <button
               type="button"
               data-testid="hold-to-talk-button"
-              aria-label="Hold to Talk (PTT)"
+              aria-label={t.holdToTalk}
               aria-pressed={isHoldingPtt}
               onPointerDown={engagePtt}
               onPointerUp={releasePtt}
@@ -805,7 +818,7 @@ export function VoiceBar({
               }`}
             >
               <Mic className="h-3.5 w-3.5" />
-              <span>{isHoldingPtt ? 'Talking (PTT)...' : 'Hold to Talk'}</span>
+              <span>{isHoldingPtt ? t.talkingPtt : t.holdToTalk}</span>
             </button>
 
             <div className="grid grid-cols-2 gap-1.5">
@@ -821,7 +834,7 @@ export function VoiceBar({
                 }`}
               >
                 <SignalLow className="h-3.5 w-3.5" />
-                <span>3G: {effectiveLowDataMode ? 'ON' : 'OFF'}</span>
+                <span>{t.lowDataShort(effectiveLowDataMode)}</span>
               </button>
 
               <button
@@ -836,7 +849,7 @@ export function VoiceBar({
                 }`}
               >
                 <CloudRain className="h-3.5 w-3.5" />
-                <span>Rain: {effectiveRainEnabled ? 'ON' : 'OFF'}</span>
+                <span>{t.rainShort(effectiveRainEnabled)}</span>
               </button>
             </div>
           </div>
@@ -849,7 +862,7 @@ export function VoiceBar({
             <button
               type="button"
               data-testid="open-mic-button"
-              aria-label="Open Mic Mute Toggle"
+              aria-label={isOpenMic ? t.openMicOn : t.openMicMuted}
               aria-pressed={isOpenMic}
               data-active={String(isOpenMic)}
               data-state={isOpenMic ? 'unmuted' : 'muted'}
@@ -866,7 +879,7 @@ export function VoiceBar({
                 <MicOff className="h-3.5 w-3.5 opacity-80 sm:h-4 sm:w-4" />
               )}
               <span className="hidden text-[10px] font-bold leading-none md:inline">
-                Mic
+                {t.micLabel}
               </span>
             </button>
 
@@ -874,7 +887,7 @@ export function VoiceBar({
             <button
               type="button"
               data-testid="chat-toggle-button"
-              aria-label="Toggle Chat Drawer"
+              aria-label={t.chatLabel}
               aria-expanded={isChatOpen}
               aria-pressed={isChatOpen}
               data-active={String(isChatOpen)}
@@ -891,11 +904,11 @@ export function VoiceBar({
             >
               <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden text-[10px] font-bold leading-none md:inline">
-                Chat
+                {t.chatLabel}
               </span>
               {displayedMessages.length > 0 && !isChatOpen && (
                 <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ff7597] px-1 text-[9px] font-bold text-white shadow-sm">
-                  {displayedMessages.length}
+                  {formatNum(displayedMessages.length, lang)}
                 </span>
               )}
             </button>
@@ -907,10 +920,10 @@ export function VoiceBar({
               type="button"
               onClick={onCopyRoomCode}
               data-testid="table-room-code"
-              title="Copy room invite link"
+              title={t.copyInvite}
               className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-[#fff0f4] px-1.5 py-1 text-[9.5px] font-bold tracking-tight text-[#7d5a58] hover:text-[#d94f72] sm:px-2 sm:text-[10px] md:bg-transparent md:p-0 md:text-[11px] md:tracking-wide"
             >
-              <span className="hidden md:inline">Room: </span>
+              <span className="hidden md:inline">{t.roomLabel}</span>
               <span>{roomCode}</span>
               {copiedRoom ? (
                 <Check className="h-2.5 w-2.5 shrink-0 text-[#289664] sm:h-3 sm:w-3" />
@@ -925,8 +938,8 @@ export function VoiceBar({
                 setIsChatOpen(false);
                 setIsSettingsOpen((prev) => !prev);
               }}
-              aria-label="Voice & Village 3G settings"
-              title="Voice, Village 3G & Rain settings"
+              aria-label={t.voiceLocal}
+              title={t.voiceLocal}
               className={`rounded-xl p-1 transition sm:p-1.5 md:p-1 ${
                 isSettingsOpen
                   ? 'bg-[#ffe6ee] text-[#d94f72]'
@@ -984,10 +997,7 @@ export function VoiceBar({
               className="flex items-center gap-1.5 rounded-full border border-[#ffd88a] bg-[#fff6db] px-3 py-1 text-[11px] font-semibold text-[#7a5010]"
             >
               <Radio className="h-3.5 w-3.5 shrink-0 text-[#e69500]" />
-              <span>
-                LiveKit Voice unconfigured — text &amp; bot fallback active
-                (configure .env.local)
-              </span>
+              <span>{t.fallbackBanner}</span>
             </div>
           ) : (
             <div
@@ -997,8 +1007,7 @@ export function VoiceBar({
             >
               <Radio className="h-3.5 w-3.5 shrink-0 text-[#289664]" />
               <span>
-                LiveKit Voice connected (
-                {effectiveLowDataMode ? '16kbps' : '24kbps'} Opus)
+                {t.connectedBanner(effectiveLowDataMode ? 16 : 24)}
               </span>
             </div>
           )}
@@ -1010,7 +1019,7 @@ export function VoiceBar({
           <button
             type="button"
             data-testid="open-mic-button"
-            aria-label="Open Mic Mute Toggle"
+            aria-label={isOpenMic ? t.openMicOn : t.openMicMuted}
             aria-pressed={isOpenMic}
             data-active={String(isOpenMic)}
             data-state={isOpenMic ? 'unmuted' : 'muted'}
@@ -1026,14 +1035,14 @@ export function VoiceBar({
             ) : (
               <MicOff className="h-3.5 w-3.5 shrink-0" />
             )}
-            <span>{isOpenMic ? 'Open Mic: ON' : 'Open Mic: Muted'}</span>
+            <span>{isOpenMic ? t.openMicOn : t.openMicMuted}</span>
           </button>
 
           {/* Mobile Thumb-Friendly Hold-to-Talk (PTT) Button (>= 44x40px) */}
           <button
             type="button"
             data-testid="hold-to-talk-button"
-            aria-label="Hold to Talk (PTT)"
+            aria-label={t.holdToTalk}
             aria-pressed={isHoldingPtt}
             data-active={String(isHoldingPtt)}
             data-state={isHoldingPtt ? 'talking' : 'idle'}
@@ -1054,14 +1063,17 @@ export function VoiceBar({
             }`}
           >
             <Mic className="h-3.5 w-3.5 shrink-0" />
-            <span>{isHoldingPtt ? 'Talking (PTT)...' : 'Hold to Talk'}</span>
+            <span>{isHoldingPtt ? t.talkingPtt : t.holdToTalk}</span>
           </button>
 
           {/* Village 3G / Low-Data Mode Toggle */}
           <button
             type="button"
             data-testid="village-3g-toggle"
-            aria-label="Village 3G Low-Data Mode"
+            aria-label={t.village3gFull(
+              effectiveLowDataMode,
+              effectiveLowDataMode ? 16 : 24,
+            )}
             aria-pressed={effectiveLowDataMode}
             data-active={String(effectiveLowDataMode)}
             data-state={effectiveLowDataMode ? 'active' : 'inactive'}
@@ -1076,9 +1088,10 @@ export function VoiceBar({
           >
             <SignalLow className="h-3.5 w-3.5 shrink-0" />
             <span>
-              {effectiveLowDataMode
-                ? 'Village 3G: ON (16kbps)'
-                : 'Village 3G: OFF (24kbps)'}
+              {t.village3gFull(
+                effectiveLowDataMode,
+                effectiveLowDataMode ? 16 : 24,
+              )}
             </span>
           </button>
 
@@ -1086,7 +1099,7 @@ export function VoiceBar({
           <button
             type="button"
             data-testid="rain-toggle"
-            aria-label="Rain Effect Toggle"
+            aria-label={t.rainFull(effectiveRainEnabled)}
             aria-pressed={effectiveRainEnabled}
             data-active={String(effectiveRainEnabled)}
             data-state={effectiveRainEnabled ? 'active' : 'inactive'}
@@ -1098,14 +1111,14 @@ export function VoiceBar({
             }`}
           >
             <CloudRain className="h-3.5 w-3.5 shrink-0" />
-            <span>{effectiveRainEnabled ? 'Rain: ON' : 'Rain: OFF'}</span>
+            <span>{t.rainFull(effectiveRainEnabled)}</span>
           </button>
 
           {/* Collapsible Bangla/Banglish Chat Drawer Toggle */}
           <button
             type="button"
             data-testid="chat-toggle-button"
-            aria-label="Toggle Chat Drawer"
+            aria-label={t.chatLabel}
             aria-expanded={isChatOpen}
             aria-pressed={isChatOpen}
             data-active={String(isChatOpen)}
@@ -1118,7 +1131,7 @@ export function VoiceBar({
             }`}
           >
             <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-            <span>Chat</span>
+            <span>{t.chatLabel}</span>
           </button>
         </div>
       </div>
@@ -1128,7 +1141,7 @@ export function VoiceBar({
         <section
           data-testid="chat-drawer"
           role="region"
-          aria-label="Bangla and Banglish Chat Drawer"
+          aria-label={t.tableChat}
           className="animate-panel-enter mt-2 w-full max-w-full overflow-hidden rounded-[26px] border-2 border-[#f4cbd5] bg-[#fffaf6] text-[#4a2e2b] shadow-lg"
         >
           {/* Auto-scrolling Message Bubbles */}
@@ -1139,7 +1152,7 @@ export function VoiceBar({
           >
             {displayedMessages.length === 0 ? (
               <li className="my-auto py-3 text-center text-xs font-medium text-[#9e7774]">
-                Tap a quick banter chip or send a message below.
+                {t.emptyChatFull}
               </li>
             ) : (
               displayedMessages.map((msg) => {
@@ -1157,7 +1170,7 @@ export function VoiceBar({
                   >
                     <div className="mb-0.5 flex items-center gap-1.5 px-1 text-[10px] text-[#9e7774]">
                       <span className="font-bold text-[#d94f72]">
-                        {msg.username}
+                        {localizeDisplayName(msg.username, lang)}
                       </span>
                       <span className="opacity-70">
                         {formatMsgTime(msg.timestamp)}
@@ -1183,7 +1196,7 @@ export function VoiceBar({
             data-testid="banter-chips-row"
             className="flex flex-wrap items-center gap-1.5 border-t border-[#f5d8df] bg-[#fff5f7] px-3 py-2"
           >
-            {BANTER_CHIPS.map((chip) => (
+            {banterChips.map((chip) => (
               <button
                 key={chip}
                 type="button"
@@ -1203,8 +1216,8 @@ export function VoiceBar({
           >
             <input
               type="text"
-              aria-label="Chat message"
-              placeholder="Type Bangla or Banglish banter…"
+              aria-label={t.chatPlaceholder}
+              placeholder={t.chatPlaceholder}
               maxLength={MAX_CHAT_MESSAGE_LENGTH}
               value={chatDraft}
               onChange={(e) => setChatDraft(e.target.value)}
@@ -1213,12 +1226,12 @@ export function VoiceBar({
             />
             <button
               type="submit"
-              aria-label="Send"
+              aria-label={t.send}
               data-testid="chat-send-button"
               className="inline-flex items-center gap-1 rounded-full bg-[#ff7597] px-3.5 py-1.5 text-xs font-extrabold text-white shadow-[0_2px_0_#d94f72] transition hover:bg-[#ff6188] active:scale-95"
             >
               <Send className="h-3 w-3 shrink-0" />
-              <span>Send</span>
+              <span>{t.send}</span>
             </button>
           </form>
         </section>

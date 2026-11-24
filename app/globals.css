@@ -436,81 +436,174 @@
 
 @keyframes play-from-top {
   0% {
-    opacity: 0;
-    transform: perspective(600px) translate3d(0, -84px, 40px) scale(0.76) rotateX(18deg) rotate(-6deg);
+    opacity: 0.88;
+    transform: perspective(700px) translate3d(0, -148px, 40px) scale(0.58) rotateX(-52deg) rotate(-5deg);
+    filter: drop-shadow(0 16px 16px rgba(74, 46, 43, 0.24));
   }
-  70% {
+  58% {
     opacity: 1;
-    transform: perspective(600px) translate3d(0, 4px, 0) scale(1.03) rotateX(-3deg) rotate(1deg);
+    transform: perspective(700px) translate3d(0, 6px, 8px) scale(1.04) rotateX(6deg) rotate(1.2deg);
+    filter: drop-shadow(0 8px 12px rgba(74, 46, 43, 0.2));
+  }
+  82% {
+    opacity: 1;
+    transform: perspective(700px) translate3d(0, -2px, 0) scale(0.99) rotateX(-2deg) rotate(-0.4deg);
   }
   100% {
     opacity: 1;
-    transform: perspective(600px) translate3d(0, 0, 0) scale(1) rotateX(0deg) rotate(0deg);
+    transform: perspective(700px) translate3d(0, 0, 0) scale(1) rotateX(0deg) rotate(0deg);
+    filter: drop-shadow(0 3px 6px rgba(74, 46, 43, 0.14));
   }
 }
 
 @keyframes play-from-bottom {
   0% {
-    opacity: 0;
-    transform: perspective(600px) translate3d(0, 92px, 48px) scale(0.84) rotateX(-16deg) rotate(5deg);
-  }
-  70% {
     opacity: 1;
-    transform: perspective(600px) translate3d(0, -4px, 0) scale(1.03) rotateX(3deg) rotate(-1deg);
+    transform: perspective(700px) translate3d(0, 128px, 48px) scale(1.14) rotateX(16deg) rotate(-3deg);
+    filter: drop-shadow(0 18px 20px rgba(74, 46, 43, 0.24));
+  }
+  58% {
+    opacity: 1;
+    transform: perspective(700px) translate3d(0, -6px, 6px) scale(1.03) rotateX(-4deg) rotate(0.8deg);
+    filter: drop-shadow(0 8px 12px rgba(74, 46, 43, 0.18));
+  }
+  84% {
+    opacity: 1;
+    transform: perspective(700px) translate3d(0, 2px, 0) scale(0.995) rotateX(1deg) rotate(0deg);
   }
   100% {
     opacity: 1;
-    transform: perspective(600px) translate3d(0, 0, 0) scale(1) rotateX(0deg) rotate(0deg);
+    transform: perspective(700px) translate3d(0, 0, 0) scale(1) rotateX(0deg) rotate(0deg);
+    filter: drop-shadow(0 3px 6px rgba(74, 46, 43, 0.14));
   }
 }
 
 @keyframes play-from-left {
   0% {
-    opacity: 0;
-    transform: perspective(600px) translate3d(-94px, 8px, 36px) scale(0.78) rotateY(-18deg) rotate(-9deg);
+    opacity: 0.88;
+    transform: perspective(700px) translate3d(-210px, 12px, 40px) scale(0.58) rotateY(58deg) rotate(-10deg);
+    filter: drop-shadow(0 16px 16px rgba(74, 46, 43, 0.24));
   }
-  70% {
+  58% {
     opacity: 1;
-    transform: perspective(600px) translate3d(4px, -1px, 0) scale(1.03) rotateY(3deg) rotate(1.5deg);
+    transform: perspective(700px) translate3d(6px, -2px, 8px) scale(1.04) rotateY(-5deg) rotate(1.4deg);
+    filter: drop-shadow(0 8px 12px rgba(74, 46, 43, 0.2));
+  }
+  82% {
+    opacity: 1;
+    transform: perspective(700px) translate3d(-2px, 0, 0) scale(0.99) rotateY(2deg) rotate(-0.4deg);
   }
   100% {
     opacity: 1;
-    transform: perspective(600px) translate3d(0, 0, 0) scale(1) rotateY(0deg) rotate(0deg);
+    transform: perspective(700px) translate3d(0, 0, 0) scale(1) rotateY(0deg) rotate(0deg);
+    filter: drop-shadow(0 3px 6px rgba(74, 46, 43, 0.14));
   }
 }
 
 @keyframes play-from-right {
   0% {
-    opacity: 0;
-    transform: perspective(600px) translate3d(94px, 8px, 36px) scale(0.78) rotateY(18deg) rotate(9deg);
+    opacity: 0.88;
+    transform: perspective(700px) translate3d(210px, 12px, 40px) scale(0.58) rotateY(-58deg) rotate(10deg);
+    filter: drop-shadow(0 16px 16px rgba(74, 46, 43, 0.24));
   }
-  70% {
+  58% {
     opacity: 1;
-    transform: perspective(600px) translate3d(-4px, -1px, 0) scale(1.03) rotateY(-3deg) rotate(-1.5deg);
+    transform: perspective(700px) translate3d(-6px, -2px, 8px) scale(1.04) rotateY(5deg) rotate(-1.4deg);
+    filter: drop-shadow(0 8px 12px rgba(74, 46, 43, 0.2));
+  }
+  82% {
+    opacity: 1;
+    transform: perspective(700px) translate3d(2px, 0, 0) scale(0.99) rotateY(-2deg) rotate(0.4deg);
   }
   100% {
     opacity: 1;
-    transform: perspective(600px) translate3d(0, 0, 0) scale(1) rotateY(0deg) rotate(0deg);
+    transform: perspective(700px) translate3d(0, 0, 0) scale(1) rotateY(0deg) rotate(0deg);
+    filter: drop-shadow(0 3px 6px rgba(74, 46, 43, 0.14));
+  }
+}
+
+@keyframes play-mobile-from-left {
+  0% {
+    opacity: 0.9;
+    transform: perspective(500px) translate3d(-96px, 6px, 24px) scale(0.64) rotateY(48deg) rotate(-8deg);
+  }
+  65% {
+    opacity: 1;
+    transform: perspective(500px) translate3d(3px, -1px, 0) scale(1.03) rotateY(-3deg) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(500px) translate3d(0, 0, 0) scale(1) rotateY(0deg) rotate(0deg);
+  }
+}
+
+@keyframes play-mobile-from-right {
+  0% {
+    opacity: 0.9;
+    transform: perspective(500px) translate3d(96px, 6px, 24px) scale(0.64) rotateY(-48deg) rotate(8deg);
+  }
+  65% {
+    opacity: 1;
+    transform: perspective(500px) translate3d(-3px, -1px, 0) scale(1.03) rotateY(3deg) rotate(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(500px) translate3d(0, 0, 0) scale(1) rotateY(0deg) rotate(0deg);
   }
 }
 
 .animate-play-from-top {
-  animation: play-from-top 380ms cubic-bezier(0.18, 0.89, 0.32, 1.12) both;
+  animation: play-from-top 420ms cubic-bezier(0.2, 0.88, 0.3, 1.05) both;
 }
 
 .animate-play-from-bottom {
-  animation: play-from-bottom 380ms cubic-bezier(0.18, 0.89, 0.32, 1.12) both;
+  animation: play-from-bottom 380ms cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
 }
 
 .animate-play-from-left {
-  animation: play-from-left 380ms cubic-bezier(0.18, 0.89, 0.32, 1.12) both;
+  animation: play-from-left 420ms cubic-bezier(0.2, 0.88, 0.3, 1.05) both;
 }
 
 .animate-play-from-right {
-  animation: play-from-right 380ms cubic-bezier(0.18, 0.89, 0.32, 1.12) both;
+  animation: play-from-right 420ms cubic-bezier(0.2, 0.88, 0.3, 1.05) both;
 }
 
-/* Winning trick cards lift slightly, gather & glide into the winner's card stack */
+.animate-play-mobile-left {
+  animation: play-mobile-from-left 380ms cubic-bezier(0.2, 0.88, 0.3, 1.05) both;
+}
+
+.animate-play-mobile-right {
+  animation: play-mobile-from-right 380ms cubic-bezier(0.2, 0.88, 0.3, 1.05) both;
+}
+
+/* Exact DOM-measured winner sweep: lifts cards off felt, arcs into winner's stack, and tucks cleanly */
+@keyframes sweep-to-winner {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    filter: drop-shadow(0 3px 6px rgba(74, 46, 43, 0.16));
+  }
+  16% {
+    opacity: 1;
+    transform: translate3d(calc(var(--sweep-dx, 0px) * 0.04), -12px, 0) scale(1.06) rotate(calc(var(--sweep-rot, 0deg) * 0.25));
+    filter: drop-shadow(0 14px 16px rgba(74, 46, 43, 0.24));
+  }
+  84% {
+    opacity: 1;
+    transform: translate3d(var(--sweep-dx, 0px), var(--sweep-dy, 0px), 0) scale(var(--sweep-end-scale, 0.5)) rotate(var(--sweep-rot, 8deg));
+    filter: drop-shadow(0 6px 8px rgba(74, 46, 43, 0.18));
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--sweep-dx, 0px), var(--sweep-dy, 0px), 0) scale(calc(var(--sweep-end-scale, 0.5) * 0.86)) rotate(var(--sweep-rot, 8deg));
+  }
+}
+
+.animate-sweep-to-winner {
+  animation: sweep-to-winner 680ms cubic-bezier(0.32, 0.08, 0.24, 1) both;
+}
+
+/* Fallback directional sweeps if DOM measurements aren't available */
 @keyframes sweep-to-top {
   0% {
     opacity: 1;
@@ -522,11 +615,11 @@
   }
   86% {
     opacity: 1;
-    transform: translate3d(70px, -218px, 0) scale(0.5) rotate(10deg);
+    transform: translate3d(70px, -180px, 0) scale(0.5) rotate(10deg);
   }
   100% {
     opacity: 0;
-    transform: translate3d(74px, -230px, 0) scale(0.46) rotate(12deg);
+    transform: translate3d(74px, -190px, 0) scale(0.46) rotate(12deg);
   }
 }
 
@@ -541,11 +634,11 @@
   }
   86% {
     opacity: 1;
-    transform: translate3d(-325px, -26px, 0) scale(0.5) rotate(-12deg);
+    transform: translate3d(-280px, -20px, 0) scale(0.5) rotate(-12deg);
   }
   100% {
     opacity: 0;
-    transform: translate3d(-340px, -28px, 0) scale(0.46) rotate(-14deg);
+    transform: translate3d(-295px, -22px, 0) scale(0.46) rotate(-14deg);
   }
 }
 
@@ -560,11 +653,11 @@
   }
   86% {
     opacity: 1;
-    transform: translate3d(325px, 24px, 0) scale(0.5) rotate(12deg);
+    transform: translate3d(280px, 20px, 0) scale(0.5) rotate(12deg);
   }
   100% {
     opacity: 0;
-    transform: translate3d(340px, 26px, 0) scale(0.46) rotate(14deg);
+    transform: translate3d(295px, 22px, 0) scale(0.46) rotate(14deg);
   }
 }
 
@@ -579,178 +672,55 @@
   }
   86% {
     opacity: 1;
-    transform: translate3d(-305px, 222px, 0) scale(0.5) rotate(-12deg);
+    transform: translate3d(-260px, 190px, 0) scale(0.5) rotate(-12deg);
   }
   100% {
     opacity: 0;
-    transform: translate3d(-320px, 235px, 0) scale(0.46) rotate(-14deg);
-  }
-}
-
-/* Mobile-tuned sweep distances so cards glide straight to the mobile edge seats */
-@keyframes sweep-mobile-top {
-  0% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  18% {
-    opacity: 1;
-    transform: translate3d(0, -8px, 0) scale(1.04);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(20px, -210px, 0) scale(0.42) rotate(8deg);
-  }
-}
-
-@keyframes sweep-mobile-left {
-  0% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  18% {
-    opacity: 1;
-    transform: translate3d(-6px, -6px, 0) scale(1.04);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(-135px, 16px, 0) scale(0.42) rotate(-10deg);
-  }
-}
-
-@keyframes sweep-mobile-right {
-  0% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  18% {
-    opacity: 1;
-    transform: translate3d(6px, -6px, 0) scale(1.04);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(135px, 16px, 0) scale(0.42) rotate(10deg);
-  }
-}
-
-@keyframes sweep-mobile-bottom-left {
-  0% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  18% {
-    opacity: 1;
-    transform: translate3d(-5px, 5px, 0) scale(1.04);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(-85px, 215px, 0) scale(0.42) rotate(-10deg);
+    transform: translate3d(-275px, 200px, 0) scale(0.46) rotate(-14deg);
   }
 }
 
 .animate-sweep-to-top {
-  animation: sweep-to-top 700ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+  animation: sweep-to-top 680ms cubic-bezier(0.32, 0.08, 0.24, 1) both;
 }
 
 .animate-sweep-to-left {
-  animation: sweep-to-left 700ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+  animation: sweep-to-left 680ms cubic-bezier(0.32, 0.08, 0.24, 1) both;
 }
 
 .animate-sweep-to-right {
-  animation: sweep-to-right 700ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+  animation: sweep-to-right 680ms cubic-bezier(0.32, 0.08, 0.24, 1) both;
 }
 
 .animate-sweep-to-bottom-left {
-  animation: sweep-to-bottom-left 700ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
+  animation: sweep-to-bottom-left 680ms cubic-bezier(0.32, 0.08, 0.24, 1) both;
 }
 
-.animate-sweep-mobile-top {
-  animation: sweep-mobile-top 660ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
-}
-
-.animate-sweep-mobile-left {
-  animation: sweep-mobile-left 660ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
-}
-
-.animate-sweep-mobile-right {
-  animation: sweep-mobile-right 660ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
-}
-
-.animate-sweep-mobile-bottom-left {
-  animation: sweep-mobile-bottom-left 660ms cubic-bezier(0.32, 0.05, 0.25, 1) both;
-}
-
-/* Outward card distribution trajectories from center deck to each seat */
-@keyframes deal-to-top {
+/* Concurrent outward deal cards arching from center deck to each player's seat */
+@keyframes deal-fly-to-seat {
   0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
+    opacity: 0.96;
+    transform: perspective(600px) translate3d(0, 0, 0) scale(0.92) rotate(0deg);
+    filter: drop-shadow(0 8px 12px rgba(82, 62, 118, 0.28));
   }
-  20% {
+  32% {
     opacity: 1;
+    transform: perspective(600px) translate3d(calc(var(--deal-dx, 0px) * 0.36), calc(var(--deal-dy, 0px) * 0.36 - 14px), 24px) scale(1.04) rotate(calc(var(--deal-rot, 8deg) * 0.5));
+    filter: drop-shadow(0 14px 18px rgba(82, 62, 118, 0.3));
+  }
+  88% {
+    opacity: 1;
+    transform: perspective(600px) translate3d(var(--deal-dx, 0px), var(--deal-dy, 0px), 0) scale(0.76) rotate(var(--deal-rot, 10deg));
+    filter: drop-shadow(0 4px 8px rgba(82, 62, 118, 0.2));
   }
   100% {
     opacity: 0;
-    transform: translate3d(0, -180px, 0) scale(0.58) rotate(-12deg);
+    transform: perspective(600px) translate3d(var(--deal-dx, 0px), var(--deal-dy, 0px), 0) scale(0.7) rotate(var(--deal-rot, 10deg));
   }
 }
 
-@keyframes deal-to-left {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(-240px, 10px, 0) scale(0.58) rotate(-18deg);
-  }
-}
-
-@keyframes deal-to-right {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(240px, 10px, 0) scale(0.58) rotate(18deg);
-  }
-}
-
-@keyframes deal-to-bottom {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.85) rotate(0deg);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(0, 185px, 0) scale(0.72) rotate(8deg);
-  }
-}
-
-.animate-deal-to-top {
-  animation: deal-to-top 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.animate-deal-to-left {
-  animation: deal-to-left 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.animate-deal-to-right {
-  animation: deal-to-right 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.animate-deal-to-bottom {
-  animation: deal-to-bottom 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.animate-deal-fly {
+  animation: deal-fly-to-seat 400ms cubic-bezier(0.22, 0.85, 0.32, 1) both;
 }
 
 @keyframes trick-win-glow {
@@ -769,7 +739,7 @@
 }
 
 .animate-trick-win-glow {
-  animation: trick-win-glow 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: trick-win-glow 480ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
 }
 
 @keyframes float-pts-rise {
@@ -792,7 +762,7 @@
 }
 
 .animate-float-pts {
-  animation: float-pts-rise 1200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: float-pts-rise 960ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both;
 }
 
 @keyframes points-pop {
@@ -847,12 +817,12 @@
 
 @keyframes deal-fan-in {
   0% {
-    opacity: 0;
-    transform: perspective(600px) translate3d(0, -96px, 32px) scale(0.68) rotateX(14deg);
+    opacity: 0.72;
+    transform: perspective(600px) translate3d(0, -24px, 18px) scale(0.84) rotateX(-22deg);
   }
-  72% {
+  65% {
     opacity: 1;
-    transform: perspective(600px) translate3d(0, 4px, 0) scale(1.02) rotateX(-2deg);
+    transform: perspective(600px) translate3d(0, 3px, 0) scale(1.03) rotateX(3deg);
   }
   100% {
     opacity: 1;
@@ -861,7 +831,7 @@
 }
 
 .animate-deal-fan-in {
-  animation: deal-fan-in 500ms cubic-bezier(0.18, 0.89, 0.32, 1.12) both;
+  animation: deal-fan-in 280ms cubic-bezier(0.2, 0.9, 0.3, 1.08) both;
 }
 
 @keyframes panel-enter {
@@ -947,18 +917,14 @@
   .animate-play-from-bottom,
   .animate-play-from-left,
   .animate-play-from-right,
+  .animate-play-mobile-left,
+  .animate-play-mobile-right,
+  .animate-sweep-to-winner,
   .animate-sweep-to-top,
   .animate-sweep-to-left,
   .animate-sweep-to-right,
   .animate-sweep-to-bottom-left,
-  .animate-sweep-mobile-top,
-  .animate-sweep-mobile-left,
-  .animate-sweep-mobile-right,
-  .animate-sweep-mobile-bottom-left,
-  .animate-deal-to-top,
-  .animate-deal-to-left,
-  .animate-deal-to-right,
-  .animate-deal-to-bottom,
+  .animate-deal-fly,
   .animate-trick-win-glow,
   .animate-float-pts,
   .animate-points-pop,

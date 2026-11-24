@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Suspense } from 'react';
 import { connection } from 'next/server';
+import { BrandMark } from '@/components/BrandLogo';
 import { HundredApp } from '@/components/HundredApp';
 import { isLiveKitConfigured, isSupabaseConfigured } from '@/lib/env';
 import { DECK_CARDS } from '@/lib/types';
@@ -38,8 +39,9 @@ async function HomeShell({ searchParams }: HomePageProps) {
 
 function HomeFallback() {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[#160e08] text-[#faf3e6]">
-      <span className="font-bangla text-lg">হানডেট HUNDRED লোড হচ্ছে…</span>
+    <div className="pati-table-surface flex min-h-screen w-full flex-col items-center justify-center gap-2 text-[#4a2e2b]">
+      <BrandMark size={56} className="animate-cute-float" />
+      <span className="font-bangla text-lg font-bold">হানডেট HUNDRED লোড হচ্ছে…</span>
     </div>
   );
 }

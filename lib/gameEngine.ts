@@ -7,6 +7,7 @@ import {
   DECK_CARDS,
   QUICK_CALL_VALUES,
   SEAT_INDICES,
+  type AvatarConfig,
   type CardTier,
   type CardValue,
   type GameAction,
@@ -33,8 +34,8 @@ export {
 export const BID_TIMEOUT_MS = 25_000;
 export const PLAY_TIMEOUT_MS = 20_000;
 export const HOST_STALL_GRACE_MS = 2_500;
-export const TRICK_COMPLETE_MS = 2_200;
-export const ROUND_SUMMARY_MS = 4_500;
+export const TRICK_COMPLETE_MS = 2_900;
+export const ROUND_SUMMARY_MS = 6_500;
 export const TOTAL_ROUNDS = 10;
 export const CARDS_PER_HAND = 5;
 export const TRICKS_PER_ROUND = 5;
@@ -48,7 +49,43 @@ export const ROOM_CODE_PATTERN = /^TNG-[A-Z0-9]{2,6}$/;
 
 const ROOM_CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const ROOM_CODE_DIGITS = '0123456789';
-const FALLBACK_BOT_NAMES = ['Rafi', 'Bot 1', 'Bot 2', 'Bot 3', 'Bot 4'] as const;
+const FALLBACK_BOT_NAMES = [
+  'Rafi Bot',
+  'Tariq Bot',
+  'Nadia Bot',
+  'Mitu Bot',
+] as const;
+
+const AVATAR_CHAR_SET: ReadonlySet<string> = new Set([
+  'kitty',
+  'glasses',
+  'bearcap',
+  'dapper',
+  'bunny',
+  'crown',
+]);
+const AVATAR_BG_SET: ReadonlySet<string> = new Set([
+  'mint',
+  'pink',
+  'sky',
+  'lavender',
+  'sunny',
+  'peach',
+]);
+const AVATAR_OUTFIT_SET: ReadonlySet<string> = new Set([
+  'emerald',
+  'coral',
+  'royal',
+  'plum',
+  'amber',
+  'teal',
+]);
+const AVATAR_SKIN_SET: ReadonlySet<string> = new Set([
+  'fair',
+  'warm',
+  'wheat',
+  'tan',
+]);
 
 const DECK_CARD_SET: ReadonlySet<number> = new Set<number>(DECK_CARDS);
 const VALID_PHASES: ReadonlySet<GamePhase> = new Set<GamePhase>([
@@ -109,6 +146,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function cloneSeat(seat: SeatState): SeatState {
   return {
     ...seat,
+    ...(seat.avatar ? { avatar: { ...seat.avatar } } : {}),
     hand: [...seat.hand],
   };
 }
@@ -167,8 +205,12 @@ function pickBotName(
     }
   }
 
-  const slotCandidate = `Bot ${seatIndex + 1}`;
-  const fallbacks = [FALLBACK_BOT_NAMES[0], slotCandidate, ...FALLBACK_BOT_NAMES.slice(1)];
+  const slotCandidate = `Seat ${seatIndex + 1} Bot`;
+  const fallbacks = [
+    FALLBACK_BOT_NAMES[0],
+    slotCandidate,
+    ...FALLBACK_BOT_NAMES.slice(1),
+  ];
   for (const candidate of fallbacks) {
     if (!usedNames.has(candidate.toLowerCase())) {
       return candidate;
@@ -365,6 +407,22 @@ export function isValidCardValue(value: unknown): value is CardValue {
   );
 }
 
+export function isValidAvatarConfig(value: unknown): value is AvatarConfig {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    typeof value.character === 'string' &&
+    AVATAR_CHAR_SET.has(value.character) &&
+    typeof value.bg === 'string' &&
+    AVATAR_BG_SET.has(value.bg) &&
+    typeof value.outfit === 'string' &&
+    AVATAR_OUTFIT_SET.has(value.outfit) &&
+    typeof value.skin === 'string' &&
+    AVATAR_SKIN_SET.has(value.skin)
+  );
+}
+
 export function isValidCallValue(value: unknown): value is number {
   return (
     typeof value === 'number' &&
@@ -473,6 +531,9 @@ export function isValidGameState(value: unknown): value is GameState {
     if (typeof seat.username !== 'string') {
       return false;
     }
+    if (seat.avatar !== undefined && !isValidAvatarConfig(seat.avatar)) {
+      return false;
+    }
     if (!Array.isArray(seat.hand) || seat.hand.length > CARDS_PER_HAND) {
       return false;
     }
@@ -502,8 +563,7 @@ export function isValidGameState(value: unknown): value is GameState {
     }
     if (
       typeof seat.totalScore !== 'number' ||
-      !Number.isInteger(seat.totalScore) ||
-      seat.totalScore < 0
+      !Number.isInteger(seat.totalScore)
     ) {
       return false;
     }
@@ -584,10 +644,8 @@ export function isValidGameState(value: unknown): value is GameState {
         entry.capturedPoints < 0 ||
         typeof entry.pointsAwarded !== 'number' ||
         !Number.isInteger(entry.pointsAwarded) ||
-        entry.pointsAwarded < 0 ||
         typeof entry.totalAfter !== 'number' ||
-        !Number.isInteger(entry.totalAfter) ||
-        entry.totalAfter < 0
+        !Number.isInteger(entry.totalAfter)
       ) {
         return false;
       }
@@ -671,6 +729,7 @@ export function createInitialLobbyState(
   hostClientId: string,
   hostUsername: string,
   now: number = Date.now(),
+  hostAvatar?: AvatarConfig,
 ): GameState {
   const timestamp = safeTimestamp(now);
   const normalizedCode = normalizeRoomCode(roomCode);
@@ -684,13 +743,14 @@ export function createInitialLobbyState(
   const cleanUsername =
     typeof hostUsername === 'string' && hostUsername.trim().length > 0
       ? hostUsername.trim()
-      : 'Player 1';
+      : 'অতিথি';
 
   const seat0: SeatState = {
     seatIndex: 0,
     type: 'HUMAN',
     clientId: cleanClientId,
     username: cleanUsername,
+    ...(isValidAvatarConfig(hostAvatar) ? { avatar: { ...hostAvatar } } : {}),
     hand: [],
     call: null,
     capturedPoints: 0,
@@ -922,6 +982,16 @@ export function applyAction(
         return state;
       }
 
+      // Rule: Whoever holds card 1 must always lead Trick 1 with card 1.
+      if (
+        state.trickNumber === 1 &&
+        state.currentTrick.length === 0 &&
+        actingSeat.hand.includes(1) &&
+        action.card !== 1
+      ) {
+        return state;
+      }
+
       const nextSeats = cloneSeats(state.seats);
       nextSeats[seatIndex] = {
         ...nextSeats[seatIndex],
@@ -1105,13 +1175,19 @@ export function resolveTimeoutOrTransition(
       if (!hand || hand.length === 0) {
         return state;
       }
-      const lowestCard = Math.min(...hand) as CardValue;
+      const forcedOrLowest = (
+        state.trickNumber === 1 &&
+        state.currentTrick.length === 0 &&
+        hand.includes(1)
+          ? 1
+          : Math.min(...hand)
+      ) as CardValue;
       return applyAction(
         state,
         {
           type: 'PLAY_CARD',
           seatIndex: activeSeat,
-          card: lowestCard,
+          card: forcedOrLowest,
         },
         timestamp,
         rng,
@@ -1147,7 +1223,7 @@ export function resolveTimeoutOrTransition(
       for (const idx of SEAT_INDICES) {
         const seat = nextSeats[idx];
         const call = seat.call ?? 0;
-        const pointsAwarded = seat.capturedPoints >= call ? call : 0;
+        const pointsAwarded = seat.capturedPoints >= call ? call : -call;
         const totalAfter = seat.totalScore + pointsAwarded;
         nextSeats[idx] = {
           ...seat,
@@ -1194,8 +1270,257 @@ export function resolveTimeoutOrTransition(
   }
 }
 
+function createBotPrng(seedInput: number): () => number {
+  let s = (seedInput ^ 0x9e3779b9) >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
+  };
+}
+
+function shuffleInPlace<T>(arr: T[], prng: () => number): void {
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(prng() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+}
+
+function estimateStaticCall(hand: readonly CardValue[]): number {
+  if (hand.length === 0) return MIN_CALL;
+  const handSet = new Set<number>(hand);
+  let expected = 0;
+
+  for (const card of hand) {
+    if (card === 1) continue;
+    let higherOutside = 0;
+    for (const d of DECK_CARDS) {
+      if (d > card && !handSet.has(d)) higherOutside += 1;
+    }
+    const winProb =
+      higherOutside < WIN_PROBABILITY_BY_HIGHER_OUTSIDE.length
+        ? WIN_PROBABILITY_BY_HIGHER_OUTSIDE[higherOutside]
+        : 0;
+    expected += winProb * (card + 110);
+  }
+
+  const buffered = expected * 0.86;
+  const rounded = Math.round(buffered / CALL_STEP) * CALL_STEP;
+  return Math.max(MIN_CALL, Math.min(MAX_CALL, rounded));
+}
+
+function pickRolloutCard(
+  sortedHand: readonly CardValue[],
+  trickNumber: number,
+  currentTrick: readonly TrickPlay[],
+  seatCall: number,
+  seatCaptured: number,
+  unseenPool: readonly CardValue[],
+  seatCalls: readonly number[],
+  seatCaptureds: readonly number[],
+  seatIdx: SeatIndex,
+): CardValue {
+  if (sortedHand.length === 1) {
+    return sortedHand[0];
+  }
+  if (trickNumber === 1 && currentTrick.length === 0 && sortedHand.includes(1)) {
+    return 1;
+  }
+
+  const needed = Math.max(0, seatCall - seatCaptured);
+  let unseenMax = 0;
+  for (let i = 0; i < unseenPool.length; i += 1) {
+    if (unseenPool[i] > unseenMax) unseenMax = unseenPool[i];
+  }
+
+  if (needed === 0) {
+    if (currentTrick.length > 0) {
+      let currentMax = 0;
+      let currentWinnerSeat = currentTrick[0].seatIndex;
+      let currentPot = 0;
+      for (const play of currentTrick) {
+        currentPot += play.card;
+        if (play.card > currentMax) {
+          currentMax = play.card;
+          currentWinnerSeat = play.seatIndex;
+        }
+      }
+      const underCards = sortedHand.filter((c) => c < currentMax);
+      if (underCards.length > 0) {
+        const highUnder = underCards[underCards.length - 1];
+        const lowUnder = underCards[0];
+        const winnerNeeded = Math.max(
+          0,
+          seatCalls[currentWinnerSeat] - seatCaptureds[currentWinnerSeat],
+        );
+        if (
+          winnerNeeded > 0 &&
+          winnerNeeded > currentPot + lowUnder &&
+          winnerNeeded <= currentPot + highUnder
+        ) {
+          return lowUnder;
+        }
+        return highUnder;
+      }
+      if (currentTrick.length === 3) {
+        return sortedHand[sortedHand.length - 1];
+      }
+    }
+    return sortedHand[0];
+  }
+
+  if (currentTrick.length === 0) {
+    const highest = sortedHand[sortedHand.length - 1];
+    const isBoss = highest > unseenMax;
+    const bossCount = sortedHand.filter((c) => c > unseenMax).length;
+    if (isBoss && (highest + 95 >= needed || sortedHand.length <= 2 || bossCount >= 2)) {
+      return highest;
+    }
+    if (highest >= 80 && trickNumber >= 4 && sortedHand.length <= 2) {
+      return highest;
+    }
+    return sortedHand[0];
+  }
+
+  let currentMax = 0;
+  let currentPot = 0;
+  for (const play of currentTrick) {
+    currentPot += play.card;
+    if (play.card > currentMax) currentMax = play.card;
+  }
+
+  const winners = sortedHand.filter((c) => c > currentMax);
+  if (winners.length === 0) {
+    return sortedHand[0];
+  }
+
+  const cheapestWinner = winners[0];
+  if (currentTrick.length === 3) {
+    if (
+      cheapestWinner >= 95 &&
+      currentPot < 35 &&
+      sortedHand.length >= 3 &&
+      needed > currentPot + cheapestWinner + 75
+    ) {
+      return sortedHand[0];
+    }
+    return cheapestWinner;
+  }
+
+  // Check if any pending opponent still needs points
+  const playedSeats = new Set<number>(currentTrick.map((p) => p.seatIndex));
+  playedSeats.add(seatIdx);
+  let hungryPending = 0;
+  for (const idx of SEAT_INDICES) {
+    if (!playedSeats.has(idx) && seatCaptureds[idx] < seatCalls[idx]) {
+      hungryPending += 1;
+    }
+  }
+
+  if (hungryPending === 0) {
+    return cheapestWinner;
+  }
+
+  const bossWinner = winners.find((c) => c > unseenMax);
+  if (currentPot + cheapestWinner >= needed) {
+    if (cheapestWinner > unseenMax || !bossWinner) {
+      return cheapestWinner;
+    }
+    if (currentPot + bossWinner >= needed) {
+      return bossWinner;
+    }
+  }
+
+  if (bossWinner && (currentPot >= 85 || (trickNumber >= 4 && currentPot >= 50))) {
+    return bossWinner;
+  }
+
+  if (cheapestWinner >= 75 && currentPot >= 45) {
+    return cheapestWinner;
+  }
+
+  if (trickNumber >= 4) {
+    return cheapestWinner;
+  }
+
+  return sortedHand[0];
+}
+
+function simulateRollout(
+  hands: [CardValue[], CardValue[], CardValue[], CardValue[]],
+  calls: [number, number, number, number],
+  captured: [number, number, number, number],
+  startTrickNumber: number,
+  initialTrick: TrickPlay[],
+  activeSeatStart: SeatIndex,
+): [number, number, number, number] {
+  let trickNumber = startTrickNumber;
+  let trick: TrickPlay[] = initialTrick.map((p) => ({ ...p }));
+  let actor = activeSeatStart;
+
+  while (hands.some((h) => h.length > 0) || trick.length > 0) {
+    if (trick.length === 4) {
+      let winSeat = trick[0].seatIndex;
+      let maxCard = trick[0].card;
+      let pot = 0;
+      for (const play of trick) {
+        pot += play.card;
+        if (play.card > maxCard) {
+          maxCard = play.card;
+          winSeat = play.seatIndex;
+        }
+      }
+      captured[winSeat] += pot;
+      trick = [];
+      trickNumber += 1;
+      actor = winSeat;
+      if (hands[actor].length === 0) {
+        break;
+      }
+      continue;
+    }
+
+    const hand = hands[actor];
+    if (hand.length === 0) {
+      break;
+    }
+
+    const unseen: CardValue[] = [];
+    for (const sIdx of SEAT_INDICES) {
+      if (sIdx !== actor) {
+        for (const c of hands[sIdx]) unseen.push(c);
+      }
+    }
+
+    const chosen = pickRolloutCard(
+      hand,
+      trickNumber,
+      trick,
+      calls[actor],
+      captured[actor],
+      unseen,
+      calls,
+      captured,
+      actor,
+    );
+
+    const removeIdx = hand.indexOf(chosen);
+    if (removeIdx >= 0) {
+      hand.splice(removeIdx, 1);
+    }
+    trick.push({ seatIndex: actor, card: chosen });
+    actor = getNextSeat(actor);
+  }
+
+  return captured;
+}
+
 /**
- * Estimates a conservative, legal bidding call (0..500 in steps of 10) for an AI seat.
+ * Estimates a strong EV-maximizing bidding call (50..500 in steps of 10) for an AI seat
+ * via deterministic Monte Carlo round rollouts tailored to the +/- call scoring rule.
  */
 export function computeBotCall(
   hand: readonly CardValue[],
@@ -1212,58 +1537,99 @@ export function computeBotCall(
     return 0;
   }
 
-  const handSet = new Set<number>(validHand);
-  let expectedTotal = 0;
+  const sortedMyHand = [...validHand].sort((a, b) => a - b);
+  const handSet = new Set<number>(sortedMyHand);
+  const remainingDeck = DECK_CARDS.filter((c) => !handSet.has(c));
 
-  for (const card of validHand) {
-    let higherOutsideCount = 0;
-    for (const deckCard of DECK_CARDS) {
-      if (deckCard > card && !handSet.has(deckCard)) {
-        higherOutsideCount += 1;
-      }
-    }
-    const winProb =
-      higherOutsideCount < WIN_PROBABILITY_BY_HIGHER_OUTSIDE.length
-        ? WIN_PROBABILITY_BY_HIGHER_OUTSIDE[higherOutsideCount]
-        : 0;
-    // A won trick pays the winning card plus 3 other cards (~105 avg).
-    expectedTotal += winProb * (card + 105);
-  }
-
-  // Holding 1 gives Trick 1 lead control; multiple high cards (80+) improve tempo.
-  if (handSet.has(1)) {
-    expectedTotal += 8;
-  }
-  const highCardCount = validHand.filter((c) => c >= 80).length;
-  if (highCardCount >= 2) {
-    expectedTotal += (highCardCount - 1) * 10;
-  }
-
-  const validCalls = Array.isArray(existingCalls)
+  const validExistingCalls = Array.isArray(existingCalls)
     ? existingCalls.filter(
-        (call): call is number => typeof call === 'number' && Number.isFinite(call),
+        (c): c is number => typeof c === 'number' && Number.isFinite(c) && c >= MIN_CALL,
       )
     : [];
+  const sortedKnownCalls = [...validExistingCalls].sort((a, b) => b - a);
 
-  if (validCalls.length > 0) {
-    const avgCall =
-      validCalls.reduce((sum, value) => sum + value, 0) / validCalls.length;
-    if (avgCall >= 240 && expectedTotal > 50) {
-      expectedTotal -= 15;
-    } else if (avgCall <= 60 && validCalls.length >= 2 && expectedTotal > 0) {
-      expectedTotal += 10;
+  let seed = 17;
+  for (const c of sortedMyHand) seed = (seed * 131 + c) | 0;
+  for (const c of sortedKnownCalls) seed = (seed * 37 + c) | 0;
+  const prng = createBotPrng(seed);
+
+  const ROLLOUTS = 96;
+  const capturedSamples: number[] = [];
+  const baseMyCallEstimate = estimateStaticCall(sortedMyHand);
+
+  for (let sim = 0; sim < ROLLOUTS; sim += 1) {
+    const pool = [...remainingDeck];
+    shuffleInPlace(pool, prng);
+
+    const opps: [CardValue[], CardValue[], CardValue[]] = [
+      pool.slice(0, 5).sort((a, b) => a - b),
+      pool.slice(5, 10).sort((a, b) => a - b),
+      pool.slice(10, 15).sort((a, b) => a - b),
+    ];
+
+    const estCalls = opps.map((h) => estimateStaticCall(h));
+    if (sortedKnownCalls.length > 0) {
+      const oppOrder = [0, 1, 2].sort((a, b) => estCalls[b] - estCalls[a]);
+      for (let k = 0; k < Math.min(3, sortedKnownCalls.length); k += 1) {
+        estCalls[oppOrder[k]] = sortedKnownCalls[k];
+      }
+    }
+
+    const hands: [CardValue[], CardValue[], CardValue[], CardValue[]] = [
+      [...sortedMyHand],
+      opps[0],
+      opps[1],
+      opps[2],
+    ];
+
+    const calls: [number, number, number, number] = [
+      baseMyCallEstimate,
+      estCalls[0],
+      estCalls[1],
+      estCalls[2],
+    ];
+    const captured: [number, number, number, number] = [0, 0, 0, 0];
+
+    const starterSeat =
+      hands.findIndex((h) => h.includes(1)) !== -1
+        ? (hands.findIndex((h) => h.includes(1)) as SeatIndex)
+        : 0;
+
+    simulateRollout(hands, calls, captured, 1, [], starterSeat);
+    capturedSamples.push(captured[0]);
+  }
+
+  let bestCall = MIN_CALL;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (let candidate = MIN_CALL; candidate <= MAX_CALL; candidate += CALL_STEP) {
+    let hits = 0;
+    for (let i = 0; i < ROLLOUTS; i += 1) {
+      if (capturedSamples[i] >= candidate) {
+        hits += 1;
+      }
+    }
+    const pHit = hits / ROLLOUTS;
+    let ev = candidate * (2 * pHit - 1);
+    // Avoid coin-flip overbids when a slightly safer call yields solid positive EV.
+    if (pHit < 0.56 && candidate > MIN_CALL) {
+      ev -= (0.56 - pHit) * candidate * 0.45;
+    }
+    // Small reliability nudge on near-ties
+    ev += pHit * 4;
+
+    if (ev > bestScore) {
+      bestScore = ev;
+      bestCall = candidate;
     }
   }
 
-  // Slight conservative buffer so bots hit their call reliably.
-  const buffered = expectedTotal * 0.88;
-  const rounded = Math.round(buffered / CALL_STEP) * CALL_STEP;
-  const clamped = Math.max(MIN_CALL, Math.min(MAX_CALL, rounded));
-  return clamped === 0 ? 0 : clamped;
+  return bestCall;
 }
 
 /**
- * Chooses a legal card from `state.seats[seatIndex].hand` using goal-aware trick heuristics.
+ * Chooses a strong, legal card from `state.seats[seatIndex].hand` using public card-counting
+ * and deterministic Monte Carlo rollout lookahead without reading opponents' hidden cards.
  */
 export function computeBotCard(state: GameState, seatIndex: SeatIndex): CardValue {
   if (!isRecord(state) || !Array.isArray(state.seats) || !isValidSeatIndex(seatIndex)) {
@@ -1281,74 +1647,158 @@ export function computeBotCard(state: GameState, seatIndex: SeatIndex): CardValu
     return sorted[0];
   }
 
-  const targetCall = seat.call ?? 0;
-  const needed = Math.max(0, targetCall - seat.capturedPoints);
   const currentTrick = Array.isArray(state.currentTrick) ? state.currentTrick : [];
 
-  // Call already satisfied: dump the highest safe under-card when following, or lowest when leading.
+  // Mandatory rule: Trick 1 lead with card 1.
+  if (state.trickNumber === 1 && currentTrick.length === 0 && sorted.includes(1)) {
+    return 1;
+  }
+
+  const targetCall = seat.call ?? 0;
+  const needed = Math.max(0, targetCall - seat.capturedPoints);
+
+  // Fast optimal exit when call is already met.
   if (needed === 0) {
     if (currentTrick.length > 0) {
       const currentMax = Math.max(...currentTrick.map((play) => play.card));
+      const currentWinner = getTrickWinner(currentTrick);
+      const currentPot = getTrickPoints(currentTrick);
       const underCards = sorted.filter((card) => card < currentMax);
       if (underCards.length > 0) {
-        return underCards[underCards.length - 1];
+        const highUnder = underCards[underCards.length - 1];
+        const lowUnder = underCards[0];
+        if (currentWinner) {
+          const wSeat = state.seats[currentWinner.seatIndex];
+          const wNeeded = Math.max(0, (wSeat.call ?? 0) - wSeat.capturedPoints);
+          if (
+            wNeeded > 0 &&
+            wNeeded > currentPot + lowUnder &&
+            wNeeded <= currentPot + highUnder
+          ) {
+            return lowUnder;
+          }
+        }
+        return highUnder;
       }
-    }
-    return sorted[0];
-  }
-
-  // Leading a trick
-  if (currentTrick.length === 0) {
-    const highest = sorted[sorted.length - 1];
-    if (highest === 100 && (needed <= 130 || sorted.length <= 3)) {
-      return highest;
-    }
-    if (highest >= 90 && (needed >= 80 || sorted.length <= 2)) {
-      return highest;
-    }
-    if (highest >= 75 && state.trickNumber >= 3) {
-      return highest;
-    }
-    return sorted[0];
-  }
-
-  const currentMax = Math.max(...currentTrick.map((play) => play.card));
-  const currentPot = getTrickPoints(currentTrick);
-  const winners = sorted.filter((card) => card > currentMax);
-
-  // Cannot win this trick: dump the lowest card to avoid feeding points.
-  if (winners.length === 0) {
-    return sorted[0];
-  }
-
-  const cheapestWinner = winners[0];
-
-  // Last to play in the trick: guaranteed win if we beat currentMax.
-  if (currentTrick.length === 3) {
-    if (currentPot + cheapestWinner >= needed) {
-      return cheapestWinner;
-    }
-    // Avoid burning a 95/100 on a tiny pot early if we still have multiple tricks left.
-    if (cheapestWinner >= 95 && currentPot < 35 && sorted.length >= 3 && needed > 140) {
+      if (currentTrick.length === 3) {
+        return sorted[sorted.length - 1];
+      }
+    } else {
       return sorted[0];
     }
-    return cheapestWinner;
   }
 
-  // Middle seats (2nd or 3rd to play)
-  if (currentPot + cheapestWinner >= needed) {
-    return cheapestWinner;
+  // Fast exact checks on 4th seat to play.
+  if (currentTrick.length === 3) {
+    const currentMax = Math.max(...currentTrick.map((play) => play.card));
+    const currentPot = getTrickPoints(currentTrick);
+    const winners = sorted.filter((card) => card > currentMax);
+    if (winners.length === 0) {
+      return sorted[0];
+    }
+    if (currentPot + winners[0] >= needed) {
+      return winners[0];
+    }
   }
 
-  if (winners[winners.length - 1] === 100 && (currentPot >= 95 || state.trickNumber >= 4)) {
-    return 100;
+  // Public card-counting pool: all unplayed cards outside my hand and currentTrick.
+  // Never inspect which specific opponent holds which card — shuffle across opponents fairly.
+  const unseenPool: CardValue[] = [];
+  const otherHandSizes: [number, number, number, number] = [0, 0, 0, 0];
+  for (const idx of SEAT_INDICES) {
+    if (idx !== normalizedSeat) {
+      const sHand = state.seats[idx].hand;
+      otherHandSizes[idx] = sHand.length;
+      for (const c of sHand) {
+        unseenPool.push(c);
+      }
+    }
   }
 
-  if (cheapestWinner >= 75 || currentPot >= 55 || state.trickNumber >= 4) {
-    return cheapestWinner;
+  let seed = (state.round * 97 + state.trickNumber * 31 + normalizedSeat * 13) | 0;
+  for (const c of sorted) seed = (seed * 41 + c) | 0;
+  for (const p of currentTrick) seed = (seed * 29 + p.card) | 0;
+  const prng = createBotPrng(seed);
+
+  const ROLLOUTS_PER_CARD = 44;
+  let bestCard = sorted[0];
+  let bestUtility = Number.NEGATIVE_INFINITY;
+
+  const baseCalls: [number, number, number, number] = [
+    state.seats[0].call ?? MIN_CALL,
+    state.seats[1].call ?? MIN_CALL,
+    state.seats[2].call ?? MIN_CALL,
+    state.seats[3].call ?? MIN_CALL,
+  ];
+  const baseCaptured: [number, number, number, number] = [
+    state.seats[0].capturedPoints,
+    state.seats[1].capturedPoints,
+    state.seats[2].capturedPoints,
+    state.seats[3].capturedPoints,
+  ];
+
+  for (const candidate of sorted) {
+    let utilitySum = 0;
+
+    for (let sim = 0; sim < ROLLOUTS_PER_CARD; sim += 1) {
+      const shuffledPool = [...unseenPool];
+      shuffleInPlace(shuffledPool, prng);
+
+      let cursor = 0;
+      const hands: [CardValue[], CardValue[], CardValue[], CardValue[]] = [[], [], [], []];
+      for (const idx of SEAT_INDICES) {
+        if (idx === normalizedSeat) {
+          hands[idx] = sorted.filter((c) => c !== candidate);
+        } else {
+          const count = otherHandSizes[idx];
+          hands[idx] = shuffledPool
+            .slice(cursor, cursor + count)
+            .sort((a, b) => a - b);
+          cursor += count;
+        }
+      }
+
+      const simTrick: TrickPlay[] = [
+        ...currentTrick.map((p) => ({ ...p })),
+        { seatIndex: normalizedSeat, card: candidate },
+      ];
+      const captured: [number, number, number, number] = [...baseCaptured];
+      const nextActor = getNextSeat(normalizedSeat);
+
+      simulateRollout(
+        hands,
+        baseCalls,
+        captured,
+        Math.max(1, state.trickNumber),
+        simTrick,
+        nextActor,
+      );
+
+      const myScore =
+        captured[normalizedSeat] >= baseCalls[normalizedSeat]
+          ? baseCalls[normalizedSeat]
+          : -baseCalls[normalizedSeat];
+
+      let oppScoreSum = 0;
+      for (const idx of SEAT_INDICES) {
+        if (idx !== normalizedSeat) {
+          oppScoreSum +=
+            captured[idx] >= baseCalls[idx] ? baseCalls[idx] : -baseCalls[idx];
+        }
+      }
+
+      utilitySum +=
+        myScore - 0.22 * (oppScoreSum / 3) + 0.015 * captured[normalizedSeat];
+    }
+
+    const avgUtility = utilitySum / ROLLOUTS_PER_CARD;
+    if (avgUtility > bestUtility) {
+      bestUtility = avgUtility;
+      bestCard = candidate;
+    }
   }
 
-  return sorted[0];
+  return bestCard;
 }
 
 /**
@@ -1414,6 +1864,17 @@ export function getMatchRankings(state: GameState): MatchRankingEntry[] {
   return ranked;
 }
 
+function areAvatarsEqual(a?: AvatarConfig, b?: AvatarConfig): boolean {
+  if (!a && !b) return true;
+  if (!a || !b) return false;
+  return (
+    a.character === b.character &&
+    a.bg === b.bg &&
+    a.outfit === b.outfit &&
+    a.skin === b.skin
+  );
+}
+
 /**
  * Pure helper for M3 human seating & reconnect handling without mutating input state.
  */
@@ -1422,6 +1883,7 @@ export function assignHumanSeat(
   clientId: string,
   username: string,
   now: number = Date.now(),
+  avatar?: AvatarConfig,
 ): GameState {
   if (!isRecord(state) || !Array.isArray(state.seats) || state.seats.length !== 4) {
     return state;
@@ -1433,6 +1895,7 @@ export function assignHumanSeat(
     return state;
   }
 
+  const validAvatar = isValidAvatarConfig(avatar) ? { ...avatar } : undefined;
   const timestamp = safeTimestamp(now);
   const existingSeat = state.seats.find(
     (seat) => seat.type === 'HUMAN' && seat.clientId === cleanId,
@@ -1440,7 +1903,15 @@ export function assignHumanSeat(
 
   if (existingSeat) {
     const nextUsername = state.phase === 'LOBBY' ? cleanName : existingSeat.username;
-    if (existingSeat.isOnline && nextUsername === existingSeat.username) {
+    const nextAvatar =
+      state.phase === 'LOBBY' && validAvatar !== undefined
+        ? validAvatar
+        : existingSeat.avatar;
+    if (
+      existingSeat.isOnline &&
+      nextUsername === existingSeat.username &&
+      areAvatarsEqual(existingSeat.avatar, nextAvatar)
+    ) {
       return state;
     }
     const nextSeats = cloneSeats(state.seats);
@@ -1448,6 +1919,7 @@ export function assignHumanSeat(
       ...nextSeats[existingSeat.seatIndex],
       isOnline: true,
       username: nextUsername,
+      ...(nextAvatar !== undefined ? { avatar: nextAvatar } : {}),
     };
     if (state.phase === 'LOBBY') {
       resolveCollidingBotNames(nextSeats, nextUsername);
@@ -1475,6 +1947,7 @@ export function assignHumanSeat(
     type: 'HUMAN',
     clientId: cleanId,
     username: cleanName,
+    ...(validAvatar !== undefined ? { avatar: validAvatar } : {}),
     hand: [],
     call: null,
     capturedPoints: 0,

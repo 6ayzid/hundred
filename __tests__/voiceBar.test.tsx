@@ -118,6 +118,7 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
         {...createDefaultProps({
           isLiveKitConfigured: false,
           onSpeakingMapChange,
+          lang: 'en',
         })}
       />,
     );
@@ -201,7 +202,7 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
   });
 
   it('toggles Open Mic Mute/Unmute and restores the exact initial snapshot on second click', () => {
-    render(<VoiceBar {...createDefaultProps()} />);
+    render(<VoiceBar {...createDefaultProps({ lang: 'en' })} />);
 
     const openMicBtn = screen.getByTestId('open-mic-button');
     const initialSnap = snapshotButton(openMicBtn);
@@ -220,7 +221,7 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
   });
 
   it('engages Hold-to-Talk (PTT) on pointerdown and releases cleanly on pointerup, pointercancel, pointerleave, and window blur without mutating Open Mic', () => {
-    render(<VoiceBar {...createDefaultProps()} />);
+    render(<VoiceBar {...createDefaultProps({ lang: 'en' })} />);
 
     const pttBtn = screen.getByTestId('hold-to-talk-button');
     const openMicBtn = screen.getByTestId('open-mic-button');
@@ -269,6 +270,7 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
         {...createDefaultProps({
           username: 'ChatGuard',
           onSendChat,
+          lang: 'en',
         })}
       />,
     );
@@ -286,8 +288,8 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
     expect(drawer.querySelectorAll('[data-chat-message]').length).toBe(0);
 
     // Blank / whitespace submissions must be ignored
-    const input = screen.getByLabelText('Chat message') as HTMLInputElement;
-    const sendBtn = screen.getByRole('button', { name: 'Send' });
+    const input = screen.getByTestId('chat-draft-input') as HTMLInputElement;
+    const sendBtn = screen.getByTestId('chat-send-button');
 
     fireEvent.change(input, { target: { value: '   \t  ' } });
     fireEvent.click(sendBtn);
@@ -423,6 +425,7 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
         {...createDefaultProps({
           isLiveKitConfigured: true,
           chatMessages: [existingMessage],
+          lang: 'en',
         })}
       />,
     );
@@ -439,6 +442,26 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
     expect(screen.getByTestId('chat-drawer').textContent).toContain(
       'Call koto?',
     );
+  });
+
+  it('renders simple natural Bangla labels and Bangla banter chips by default when lang is omitted', () => {
+    const onSendChat = vi.fn();
+    render(<VoiceBar {...createDefaultProps({ onSendChat })} />);
+
+    expect(screen.getByTestId('livekit-fallback-banner').textContent).toContain(
+      'ভয়েস কল সেট করা নাই',
+    );
+    expect(screen.getByTestId('hold-to-talk-button').textContent).toContain(
+      'চেপে ধরে বলো',
+    );
+
+    fireEvent.click(screen.getByTestId('chat-toggle-button'));
+    const drawer = screen.getByTestId('chat-drawer');
+    expect(drawer.getAttribute('aria-label')).toBe('আড্ডার চ্যাট');
+    expect(drawer.textContent).toContain('পাঠাও');
+    const firstChip = screen.getByTestId('banter-chip-১০০ ছাড়লাম!');
+    fireEvent.click(firstChip);
+    expect(onSendChat).toHaveBeenCalledWith('১০০ ছাড়লাম!', true);
   });
 
   it('applyAudioSenderBitrateCap helper safely updates RTCRtpSender encodings and handles missing senders', async () => {

@@ -8,7 +8,12 @@ import {
   normalizeRoomCode,
   resolveTimeoutOrTransition,
 } from '@/lib/gameEngine';
-import type { ChatMessage, GameAction, GameState } from '@/lib/types';
+import type {
+  AvatarConfig,
+  ChatMessage,
+  GameAction,
+  GameState,
+} from '@/lib/types';
 
 interface RoomBucket {
   state: GameState;
@@ -76,6 +81,7 @@ interface RelayPostBody {
   type: 'JOIN' | 'ACTION' | 'SNAPSHOT' | 'CHAT';
   clientId?: string;
   username?: string;
+  avatar?: AvatarConfig;
   action?: GameAction;
   state?: GameState;
   message?: ChatMessage;
@@ -104,17 +110,23 @@ export async function POST(
 
   if (body.type === 'JOIN') {
     const clientId = (body.clientId ?? '').trim();
-    const username = (body.username ?? '').trim() || 'Player';
+    const username = (body.username ?? '').trim() || 'অতিথি';
     if (!clientId) {
       return NextResponse.json({ error: 'Missing clientId' }, { status: 400 });
     }
     if (!bucket) {
-      const initial = createInitialLobbyState(normalized, clientId, username, now);
+      const initial = createInitialLobbyState(
+        normalized,
+        clientId,
+        username,
+        now,
+        body.avatar,
+      );
       bucket = { state: initial, chat: [], updatedAt: now };
       store.set(normalized, bucket);
     } else {
       const resolved = resolveTimeoutOrTransition(bucket.state, now);
-      bucket.state = assignHumanSeat(resolved, clientId, username, now);
+      bucket.state = assignHumanSeat(resolved, clientId, username, now, body.avatar);
       bucket.updatedAt = now;
     }
     return NextResponse.json({ state: bucket.state, chat: bucket.chat });
