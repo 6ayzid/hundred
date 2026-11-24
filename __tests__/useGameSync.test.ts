@@ -904,6 +904,56 @@ describe('Milestone 3: lib/supabaseClient.ts & hooks/useGameSync.ts', () => {
       expect(result.current.state?.activeSeat).toBe(1);
     });
 
+    it('auto-plays the last card automatically on the final turn when active player has only 1 card left', () => {
+      const clientId = 'auto-last-host';
+      window.sessionStorage.setItem('eksho_client_id', clientId);
+      window.sessionStorage.setItem('clientId', clientId);
+
+      const now = Date.now();
+      let base = createInitialLobbyState('TNG-LC55', clientId, 'Bayzid', now);
+      base = applyAction(base, { type: 'FILL_BOTS_AND_START' }, now);
+
+      const lastTurnSeats = [
+        { ...base.seats[0], hand: [75] as const, call: 100 },
+        { ...base.seats[1], hand: [40] as const, call: 100 },
+        { ...base.seats[2], hand: [90] as const, call: 100 },
+        { ...base.seats[3], hand: [25] as const, call: 100 },
+      ];
+      const finalTrickState: GameState = {
+        ...base,
+        version: 42,
+        phase: 'PLAYING',
+        trickNumber: 5,
+        roundStarterSeat: 0,
+        trickLeaderSeat: 0,
+        activeSeat: 0,
+        currentTrick: [],
+        seats: lastTurnSeats as unknown as GameState['seats'],
+      };
+      window.localStorage.setItem('eksho_state_TNG-LC55', JSON.stringify(finalTrickState));
+
+      const { result } = renderHook(() =>
+        useGameSync({
+          roomCode: 'TNG-LC55',
+          username: 'Bayzid',
+          enabled: true,
+        }),
+      );
+
+      expect(result.current.state?.seats[0].hand).toEqual([75]);
+
+      act(() => {
+        vi.advanceTimersByTime(450);
+      });
+
+      expect(result.current.state?.currentTrick[0]).toEqual({
+        seatIndex: 0,
+        card: 75,
+      });
+      expect(result.current.state?.seats[0].hand).toEqual([]);
+      expect(result.current.state?.activeSeat).toBe(1);
+    });
+
     it('triggers >2500ms Host stall watchdog failover on Seat 1 when Host (Seat 0) stalls past turnDeadline', () => {
       const { mockSupabaseClient, channels } = createMockSupabaseEnvironment();
       mockCreateClient.mockReturnValue(mockSupabaseClient);

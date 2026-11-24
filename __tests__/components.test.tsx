@@ -127,7 +127,7 @@ describe('Lobby', () => {
 
     expect(screen.getByText(/হানডেট/)).toBeTruthy();
     expect(screen.getByText('HUNDRED')).toBeTruthy();
-    expect(screen.getByTestId('create-room-btn').textContent).toContain('নতুন ঘর + লিংক');
+    expect(screen.getByTestId('create-room-btn').textContent).toContain('নতুন রুম + লিংক');
 
     fireEvent.click(screen.getByTestId('lang-toggle-btn'));
     expect(onToggleLang).toHaveBeenCalledTimes(1);

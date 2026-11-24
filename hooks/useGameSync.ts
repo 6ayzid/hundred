@@ -1508,7 +1508,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     commitAndPersistState,
   ]);
 
-  // AI Bot & Auto-1 Lead Scheduler (Host only; auto-plays 1 after all calls lock, handles AI bidding & turns)
+  // AI Bot, Auto-1 Lead & Last-Card Auto-Play Scheduler (Host only)
   useEffect(() => {
     if (!validRoom || !isHost || !state) {
       return;
@@ -1524,6 +1524,9 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
       state.trickNumber === 1 &&
       state.currentTrick.length === 0 &&
       Boolean(activeSeatObj && activeSeatObj.hand.includes(1));
+    const isForcedAutoLastCard =
+      state.phase === 'PLAYING' &&
+      Boolean(activeSeatObj && activeSeatObj.hand.length === 1);
 
     let targetSeatIndex: SeatIndex | null = null;
     if (state.phase === 'BIDDING') {
@@ -1533,7 +1536,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
       if (uncalledBot) {
         targetSeatIndex = uncalledBot.seatIndex;
       }
-    } else if (isForcedAutoOneLead && activeSeatObj) {
+    } else if ((isForcedAutoOneLead || isForcedAutoLastCard) && activeSeatObj) {
       targetSeatIndex = activeSeatObj.seatIndex;
     } else if (activeSeatObj && activeSeatObj.type === 'AI') {
       targetSeatIndex = activeSeatObj.seatIndex;
@@ -1554,7 +1557,7 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
     const delayMs = isJsdom
       ? state.phase === 'BIDDING'
         ? 350
-        : isForcedAutoOneLead
+        : isForcedAutoOneLead || isForcedAutoLastCard
           ? 350
           : BOT_TURN_DELAY_MS
       : state.phase === 'BIDDING'
@@ -1563,7 +1566,9 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           : 950
         : isForcedAutoOneLead
           ? 1250
-          : 1200;
+          : isForcedAutoLastCard
+            ? 650
+            : 1200;
 
     const turnTimer = setTimeout(() => {
       const current = stateRef.current;
@@ -1610,10 +1615,15 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           current.trickNumber === 1 &&
           current.currentTrick.length === 0 &&
           seat.hand.includes(1);
-        if (!shouldAutoPlayOne && seat.type !== 'AI') {
+        const shouldAutoPlayLast = seat.hand.length === 1;
+        if (!shouldAutoPlayOne && !shouldAutoPlayLast && seat.type !== 'AI') {
           return;
         }
-        const card = shouldAutoPlayOne ? 1 : computeBotCard(current, actorSeatIdx);
+        const card = shouldAutoPlayOne
+          ? 1
+          : shouldAutoPlayLast
+            ? seat.hand[0]
+            : computeBotCard(current, actorSeatIdx);
         const nextState = applyAction(
           current,
           {

@@ -618,7 +618,10 @@ export function GameTable({
     state.trickNumber === 1 &&
     state.currentTrick.length === 0 &&
     activeSeatObj.hand.includes(1);
-  const canClickHandCard = isMyPlayTurn && !isWaitingAutoPlayOne;
+  const isWaitingAutoPlayLast =
+    state.phase === 'PLAYING' && activeSeatObj.hand.length === 1;
+  const canClickHandCard =
+    isMyPlayTurn && !isWaitingAutoPlayOne && !isWaitingAutoPlayLast;
   const calledCount = state.seats.filter((s) => s.call !== null).length;
 
   const isSeatActiveTurn = (seat: GameState['seats'][number]): boolean => {
@@ -961,9 +964,13 @@ export function GameTable({
       ? mySeatIndex !== null && state.activeSeat === mySeatIndex
         ? t.autoPlayOneMine
         : t.autoPlayOneOther(localizeDisplayName(activeSeatObj.username, lang))
-      : isMyPlayTurn && state.phase === 'PLAYING'
-        ? t.yourTurnTap
-        : null;
+      : state.phase === 'PLAYING' && isWaitingAutoPlayLast
+        ? mySeatIndex !== null && state.activeSeat === mySeatIndex
+          ? t.autoPlayLastMine
+          : null
+        : isMyPlayTurn && state.phase === 'PLAYING'
+          ? t.yourTurnTap
+          : null;
 
   const turnRing = (compact = false) => (
     <div
@@ -1363,9 +1370,12 @@ export function GameTable({
             )}
           </section>
 
-          {/* Subtle Calm Active-Turn Cue above Hand */}
+          {/* Subtle Calm Active-Turn Cue above Hand (Fixed Overlay — zero layout shift) */}
           {activeTurnHint && (
-            <div className="animate-panel-enter pointer-events-none absolute bottom-[188px] left-1/2 z-20 -translate-x-1/2 lg:bottom-[204px]">
+            <div
+              data-testid="active-turn-hint"
+              className="pointer-events-none absolute bottom-[188px] left-1/2 z-20 -translate-x-1/2 lg:bottom-[204px]"
+            >
               <span className="glass-pill whitespace-nowrap rounded-full !border-[#ff8fab] !bg-[#fff5f7] px-3.5 py-1 text-[11px] font-bold tracking-wide text-[#c73e65]">
                 {activeTurnHint}
               </span>
@@ -1376,9 +1386,7 @@ export function GameTable({
           <div
             aria-label="Your hand"
             data-testid="player-hand"
-            className={`pointer-events-none absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-end justify-center transition-transform duration-300 ${
-              canClickHandCard ? '-translate-y-1.5' : ''
-            }`}
+            className="pointer-events-none absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 flex-nowrap items-end justify-center"
           >
             {visibleLocalHand.map((card, idx) => {
               const count = visibleLocalHand.length;
@@ -1566,6 +1574,18 @@ export function GameTable({
               })()}
             </div>
 
+            {/* Mobile Non-Shifting Turn Pill anchored inside mat bottom */}
+            {activeTurnHint && (
+              <div
+                data-testid="active-turn-hint"
+                className="pointer-events-none absolute bottom-1.5 left-1/2 z-20 -translate-x-1/2"
+              >
+                <span className="glass-pill whitespace-nowrap rounded-full !border-[#ff8fab] !bg-[#fff5f7]/95 px-3 py-0.5 text-[11px] font-bold text-[#c73e65] shadow-sm">
+                  {activeTurnHint}
+                </span>
+              </div>
+            )}
+
             {/* Mobile Transient Bidding Overlay (appears AFTER deal settles) */}
             {state.phase === 'BIDDING' && !isDealingSequence && (
               <div className="absolute inset-0 z-40 flex items-center justify-center rounded-2xl bg-[#4a2e2b]/25 p-3 backdrop-blur-[2px]">
@@ -1620,21 +1640,11 @@ export function GameTable({
             />
           </div>
 
-          {activeTurnHint && (
-            <div className="mb-0.5 flex shrink-0 justify-center">
-              <span className="glass-pill whitespace-nowrap rounded-full !border-[#ff8fab] !bg-[#fff5f7] px-3 py-0.5 text-[10.5px] font-bold text-[#c73e65]">
-                {activeTurnHint}
-              </span>
-            </div>
-          )}
-
           {/* BOTTOM HAND: Large Thumb-Friendly Fanned Visiting Cards */}
           <div
             aria-label="Your hand"
             data-testid="player-hand"
-            className={`flex shrink-0 flex-nowrap items-end justify-center pb-0.5 pt-1 transition-transform duration-300 ${
-              canClickHandCard ? '-translate-y-1' : ''
-            }`}
+            className="flex shrink-0 flex-nowrap items-end justify-center pb-0.5 pt-1"
           >
             {visibleLocalHand.map((card, idx) => {
               const count = visibleLocalHand.length;

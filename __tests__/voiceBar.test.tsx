@@ -452,16 +452,16 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
       'ভয়েস কল সেট করা নাই',
     );
     expect(screen.getByTestId('hold-to-talk-button').textContent).toContain(
-      'চেপে ধরে বলো',
+      'চেপে ধরে কথা বলো',
     );
 
     fireEvent.click(screen.getByTestId('chat-toggle-button'));
     const drawer = screen.getByTestId('chat-drawer');
-    expect(drawer.getAttribute('aria-label')).toBe('আড্ডার চ্যাট');
-    expect(drawer.textContent).toContain('পাঠাও');
-    const firstChip = screen.getByTestId('banter-chip-১০০ ছাড়লাম!');
+    expect(drawer.getAttribute('aria-label')).toBe('গেম চ্যাট');
+    expect(drawer.textContent).toContain('সেন্ড');
+    const firstChip = screen.getByTestId('banter-chip-১০০ দিলাম!');
     fireEvent.click(firstChip);
-    expect(onSendChat).toHaveBeenCalledWith('১০০ ছাড়লাম!', true);
+    expect(onSendChat).toHaveBeenCalledWith('১০০ দিলাম!', true);
   });
 
   it('applyAudioSenderBitrateCap helper safely updates RTCRtpSender encodings and handles missing senders', async () => {
