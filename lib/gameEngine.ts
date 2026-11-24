@@ -1545,101 +1545,10 @@ export function computeBotCall(
     return 0;
   }
 
-<<<<<<< HEAD
-  const sortedMyHand = [...validHand].sort((a, b) => a - b);
-  const handSet = new Set<number>(sortedMyHand);
-  const remainingDeck = DECK_CARDS.filter((c) => !handSet.has(c));
-
-  const validExistingCalls = Array.isArray(existingCalls)
-    ? existingCalls.filter(
-        (c): c is number => typeof c === 'number' && Number.isFinite(c) && c >= MIN_CALL,
-      )
-    : [];
-  const sortedKnownCalls = [...validExistingCalls].sort((a, b) => b - a);
-
-  let seed = 17;
-  for (const c of sortedMyHand) seed = (seed * 131 + c) | 0;
-  for (const c of sortedKnownCalls) seed = (seed * 37 + c) | 0;
-  const prng = createBotPrng(seed);
-
-  const ROLLOUTS = 96;
-  const capturedSamples: number[] = [];
-  const baseMyCallEstimate = estimateStaticCall(sortedMyHand);
-
-  for (let sim = 0; sim < ROLLOUTS; sim += 1) {
-    const pool = [...remainingDeck];
-    shuffleInPlace(pool, prng);
-
-    const opps: [CardValue[], CardValue[], CardValue[]] = [
-      pool.slice(0, 5).sort((a, b) => a - b),
-      pool.slice(5, 10).sort((a, b) => a - b),
-      pool.slice(10, 15).sort((a, b) => a - b),
-    ];
-
-    const estCalls = opps.map((h) => estimateStaticCall(h));
-    if (sortedKnownCalls.length > 0) {
-      const oppOrder = [0, 1, 2].sort((a, b) => estCalls[b] - estCalls[a]);
-      for (let k = 0; k < Math.min(3, sortedKnownCalls.length); k += 1) {
-        estCalls[oppOrder[k]] = sortedKnownCalls[k];
-      }
-    }
-
-    const hands: [CardValue[], CardValue[], CardValue[], CardValue[]] = [
-      [...sortedMyHand],
-      opps[0],
-      opps[1],
-      opps[2],
-    ];
-
-    const calls: [number, number, number, number] = [
-      baseMyCallEstimate,
-      estCalls[0],
-      estCalls[1],
-      estCalls[2],
-    ];
-    const captured: [number, number, number, number] = [0, 0, 0, 0];
-
-    const starterSeat =
-      hands.findIndex((h) => h.includes(1)) !== -1
-        ? (hands.findIndex((h) => h.includes(1)) as SeatIndex)
-        : 0;
-
-    simulateRollout(hands, calls, captured, 1, [], starterSeat);
-    capturedSamples.push(captured[0]);
-  }
-
-  let bestCall = MIN_CALL;
-  let bestScore = Number.NEGATIVE_INFINITY;
-
-  for (let candidate = MIN_CALL; candidate <= MAX_CALL; candidate += CALL_STEP) {
-    let hits = 0;
-    for (let i = 0; i < ROLLOUTS; i += 1) {
-      if (capturedSamples[i] >= candidate) {
-        hits += 1;
-      }
-    }
-    const pHit = hits / ROLLOUTS;
-    let ev = candidate * (2 * pHit - 1);
-    // Avoid coin-flip overbids when a slightly safer call yields solid positive EV.
-    if (pHit < 0.56 && candidate > MIN_CALL) {
-      ev -= (0.56 - pHit) * candidate * 0.45;
-    }
-    // Small reliability nudge on near-ties
-    ev += pHit * 4;
-
-    if (ev > bestScore) {
-      bestScore = ev;
-      bestCall = candidate;
-    }
-  }
-
-  return bestCall;
-=======
   if (context?.botName === 'Nabil') {
     return computeLegacyBotCall(validHand, existingCalls);
   }
   return computeOptimalBotCall(validHand, existingCalls, context);
->>>>>>> e083ea9 (feat: IS-MCTS bot solver with score-aware bidding and Siam/Apon/Nabil profiles)
 }
 
 /**
@@ -1686,8 +1595,8 @@ export function computeBotCard(state: GameState, seatIndex: SeatIndex): CardValu
       if (underCards.length > 0) {
         const highUnder = underCards[underCards.length - 1];
         const lowUnder = underCards[0];
-        if (currentWinner) {
-          const wSeat = state.seats[currentWinner.seatIndex];
+        if (currentWinner !== null) {
+          const wSeat = state.seats[currentWinner!.seatIndex];
           const wNeeded = Math.max(0, (wSeat.call ?? 0) - wSeat.capturedPoints);
           if (
             wNeeded > 0 &&

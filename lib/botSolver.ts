@@ -262,6 +262,11 @@ export function computeOptimalBotCard(
   // Collect all known cards: bot's hand + currentTrick
   const currentTrick = Array.isArray(state.currentTrick) ? state.currentTrick : [];
 
+  // Mandatory rule: Trick 1 lead with card 1.
+  if (state.trickNumber === 1 && currentTrick.length === 0 && hand.includes(1)) {
+    return 1;
+  }
+
   // Fast-path: 4th to play and cheapest winner immediately clinches our call
   const targetCall = seat.call ?? 0;
   const needed = Math.max(0, targetCall - seat.capturedPoints);
