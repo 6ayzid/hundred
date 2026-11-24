@@ -22,6 +22,13 @@ import {
   type SeatType,
   type TrickPlay,
 } from './types';
+import {
+  computeOptimalBotCall,
+  computeOptimalBotCard,
+  computeLegacyBotCall,
+  computeLegacyBotCard,
+  type BotCallContext,
+} from './botSolver';
 
 export {
   BOT_NAMES,
@@ -1525,6 +1532,7 @@ function simulateRollout(
 export function computeBotCall(
   hand: readonly CardValue[],
   existingCalls: readonly (number | null)[] = [],
+  context?: BotCallContext,
 ): number {
   if (!Array.isArray(hand) || hand.length === 0) {
     return 0;
@@ -1537,6 +1545,7 @@ export function computeBotCall(
     return 0;
   }
 
+<<<<<<< HEAD
   const sortedMyHand = [...validHand].sort((a, b) => a - b);
   const handSet = new Set<number>(sortedMyHand);
   const remainingDeck = DECK_CARDS.filter((c) => !handSet.has(c));
@@ -1625,6 +1634,12 @@ export function computeBotCall(
   }
 
   return bestCall;
+=======
+  if (context?.botName === 'Nabil') {
+    return computeLegacyBotCall(validHand, existingCalls);
+  }
+  return computeOptimalBotCall(validHand, existingCalls, context);
+>>>>>>> e083ea9 (feat: IS-MCTS bot solver with score-aware bidding and Siam/Apon/Nabil profiles)
 }
 
 /**
@@ -1647,6 +1662,10 @@ export function computeBotCard(state: GameState, seatIndex: SeatIndex): CardValu
     return sorted[0];
   }
 
+  if (seat.username === 'Nabil') {
+    return computeLegacyBotCard(state, normalizedSeat);
+  }
+  return computeOptimalBotCard(state, normalizedSeat);
   const currentTrick = Array.isArray(state.currentTrick) ? state.currentTrick : [];
 
   // Mandatory rule: Trick 1 lead with card 1.

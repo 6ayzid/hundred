@@ -1586,7 +1586,13 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           return;
         }
         const existingCalls = current.seats.map((s) => s.call);
-        const call = computeBotCall(seat.hand, existingCalls);
+        const call = computeBotCall(seat.hand, existingCalls, {
+          round: current.round,
+          seatIndex: botSeatIdx,
+          totalScores: current.seats.map((s) => s.totalScore),
+          roundStarterSeat: current.roundStarterSeat,
+          botName: seat.username,
+        });
         const nextState = applyAction(
           current,
           {
