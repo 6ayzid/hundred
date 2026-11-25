@@ -552,6 +552,22 @@
   }
 }
 
+@keyframes play-mobile-from-bottom {
+  0% {
+    opacity: 1;
+    transform: perspective(500px) translate3d(0, 154px, 36px) scale(1.12) rotateX(14deg) rotate(-3deg);
+    filter: drop-shadow(0 14px 16px rgba(74, 46, 43, 0.22));
+  }
+  62% {
+    opacity: 1;
+    transform: perspective(500px) translate3d(0, -4px, 4px) scale(1.03) rotateX(-3deg) rotate(0.6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(500px) translate3d(0, 0, 0) scale(1) rotateX(0deg) rotate(0deg);
+  }
+}
+
 .animate-play-from-top {
   animation: play-from-top 420ms cubic-bezier(0.2, 0.88, 0.3, 1.05) both;
 }
@@ -574,6 +590,10 @@
 
 .animate-play-mobile-right {
   animation: play-mobile-from-right 380ms cubic-bezier(0.2, 0.88, 0.3, 1.05) both;
+}
+
+.animate-play-mobile-bottom {
+  animation: play-mobile-from-bottom 360ms cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
 }
 
 /* Exact DOM-measured winner sweep: lifts cards off felt, arcs into winner's stack, and tucks cleanly */
@@ -919,6 +939,7 @@
   .animate-play-from-right,
   .animate-play-mobile-left,
   .animate-play-mobile-right,
+  .animate-play-mobile-bottom,
   .animate-sweep-to-winner,
   .animate-sweep-to-top,
   .animate-sweep-to-left,

@@ -801,7 +801,9 @@ export function GameTable({
             ? compact
               ? 'animate-play-mobile-right'
               : 'animate-play-from-right'
-            : 'animate-play-from-bottom';
+            : compact
+              ? 'animate-play-mobile-bottom'
+              : 'animate-play-from-bottom';
 
     const measuredSweep = sweepVectors[pos];
     const fallbackSweepClass =
@@ -960,17 +962,7 @@ export function GameTable({
     : mySeat.hand;
 
   const activeTurnHint =
-    state.phase === 'PLAYING' && isWaitingAutoPlayOne
-      ? mySeatIndex !== null && state.activeSeat === mySeatIndex
-        ? t.autoPlayOneMine
-        : t.autoPlayOneOther(localizeDisplayName(activeSeatObj.username, lang))
-      : state.phase === 'PLAYING' && isWaitingAutoPlayLast
-        ? mySeatIndex !== null && state.activeSeat === mySeatIndex
-          ? t.autoPlayLastMine
-          : null
-        : isMyPlayTurn && state.phase === 'PLAYING'
-          ? t.yourTurnTap
-          : null;
+    state.phase === 'PLAYING' && canClickHandCard ? t.yourTurnTap : null;
 
   const turnRing = (compact = false) => (
     <div
@@ -1394,10 +1386,6 @@ export function GameTable({
               const offset = idx - center;
               const rot = offset * 4.8;
               const yOffset = Math.abs(offset) * Math.abs(offset) * 4.5;
-              const highlightAutoOne =
-                card === 1 &&
-                isWaitingAutoPlayOne &&
-                mySeat.hand.includes(1);
 
               return (
                 <div
@@ -1416,7 +1404,6 @@ export function GameTable({
                       size="hand"
                       useCustomScan={scanSet.has(card)}
                       playable={canClickHandCard}
-                      selected={highlightAutoOne}
                       disabled={!canClickHandCard}
                       onClick={() => handlePlayCard(card)}
                     />
@@ -1640,11 +1627,11 @@ export function GameTable({
             />
           </div>
 
-          {/* BOTTOM HAND: Large Thumb-Friendly Fanned Visiting Cards */}
+          {/* BOTTOM HAND: Large Thumb-Friendly Fanned Visiting Cards (Fixed height prevents jank when last card leaves) */}
           <div
             aria-label="Your hand"
             data-testid="player-hand"
-            className="flex shrink-0 flex-nowrap items-end justify-center pb-0.5 pt-1"
+            className="flex h-[106px] shrink-0 flex-nowrap items-end justify-center pb-1 pt-1.5"
           >
             {visibleLocalHand.map((card, idx) => {
               const count = visibleLocalHand.length;
@@ -1652,10 +1639,6 @@ export function GameTable({
               const offset = idx - center;
               const rot = offset * 4;
               const yOffset = Math.abs(offset) * Math.abs(offset) * 2.5;
-              const highlightAutoOne =
-                card === 1 &&
-                isWaitingAutoPlayOne &&
-                mySeat.hand.includes(1);
 
               return (
                 <div
@@ -1675,7 +1658,6 @@ export function GameTable({
                       className="!h-[96px] !w-[66px] !text-[34px]"
                       useCustomScan={scanSet.has(card)}
                       playable={canClickHandCard}
-                      selected={highlightAutoOne}
                       disabled={!canClickHandCard}
                       onClick={() => handlePlayCard(card)}
                     />

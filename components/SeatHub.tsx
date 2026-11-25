@@ -600,7 +600,7 @@ function SeatHubInner({
           </div>
 
           <div className="min-w-0 text-left">
-            <div className="flex items-center gap-1.5">
+            <div className="flex min-h-[24px] items-center gap-1.5">
               <span className="max-w-[70px] truncate text-[11px] font-bold text-[#4a2e2b] sm:max-w-[82px] sm:text-xs">
                 {displayName}
                 {isMe ? t.meTag : ''}

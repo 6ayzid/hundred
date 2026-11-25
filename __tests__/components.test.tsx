@@ -519,4 +519,87 @@ describe('Round-end ranking and distinct per-rank icons', () => {
     expect(header?.textContent).not.toContain('১');
     expect(header?.textContent).not.toContain('★');
   });
+
+  it('does not poke out card 1 or show auto-play captions for Trick 1 auto-1 or final single-card turn', () => {
+    const base = createBiddingState();
+    const seatsTrick1 = base.seats.map((s, idx) => ({
+      ...s,
+      call: 100,
+      hand: idx === 0 ? [1, 25, 45, 70, 95] : [5, 30, 50, 75, 100],
+    })) as unknown as GameState['seats'];
+
+    const autoOneState: GameState = {
+      ...base,
+      phase: 'PLAYING',
+      trickNumber: 1,
+      roundStarterSeat: 0,
+      trickLeaderSeat: 0,
+      activeSeat: 0,
+      currentTrick: [],
+      seats: seatsTrick1,
+    };
+
+    const { rerender } = render(
+      <GameTable
+        state={autoOneState}
+        clientId="client-0"
+        username="Rafiq"
+        mySeatIndex={0}
+        hostSeatIndex={0}
+        syncMode="local"
+        connectionStatus="local"
+        remainingMs={20_000}
+        isLiveKitConfigured={false}
+        lowDataMode={true}
+        onToggleLowDataMode={vi.fn()}
+        rainEnabled={true}
+        onToggleRain={vi.fn()}
+        chatMessages={[]}
+        onSendChat={vi.fn()}
+        speakingByClientId={{}}
+        onSpeakingMapChange={vi.fn()}
+        onDispatchAction={vi.fn()}
+        onLeaveRoom={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('active-turn-hint')).toBeNull();
+    expect(screen.getByTestId('hand-card-1').className).not.toContain('-translate-y-6');
+
+    const lastCardState: GameState = {
+      ...autoOneState,
+      trickNumber: 5,
+      seats: base.seats.map((s, idx) => ({
+        ...s,
+        call: 100,
+        hand: idx === 0 ? [80] : [60],
+      })) as unknown as GameState['seats'],
+    };
+
+    rerender(
+      <GameTable
+        state={lastCardState}
+        clientId="client-0"
+        username="Rafiq"
+        mySeatIndex={0}
+        hostSeatIndex={0}
+        syncMode="local"
+        connectionStatus="local"
+        remainingMs={20_000}
+        isLiveKitConfigured={false}
+        lowDataMode={true}
+        onToggleLowDataMode={vi.fn()}
+        rainEnabled={true}
+        onToggleRain={vi.fn()}
+        chatMessages={[]}
+        onSendChat={vi.fn()}
+        speakingByClientId={{}}
+        onSpeakingMapChange={vi.fn()}
+        onDispatchAction={vi.fn()}
+        onLeaveRoom={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('active-turn-hint')).toBeNull();
+  });
 });

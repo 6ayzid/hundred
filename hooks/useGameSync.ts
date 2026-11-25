@@ -1565,9 +1565,9 @@ export function useGameSync(options: UseGameSyncOptions): UseGameSyncResult {
           ? 4000
           : 950
         : isForcedAutoOneLead
-          ? 1250
+          ? 320
           : isForcedAutoLastCard
-            ? 650
+            ? 320
             : 1200;
 
     const turnTimer = setTimeout(() => {
