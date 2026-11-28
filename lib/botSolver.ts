@@ -222,8 +222,9 @@ export function computeOptimalBotCall(
     }
   }
 
-  // Evaluate every valid call c in [0, 10, ..., 500]
-  let bestCall = 0;
+  // Evaluate every valid call c in [50, 60, ..., 500]
+  // With +/- call scoring: E[score(c)] = c * P(hit) - c * (1 - P(hit))
+  let bestCall = MIN_CALL;
   let bestUtility = -Infinity;
 
   for (let c = MIN_CALL; c <= MAX_CALL; c += CALL_STEP) {
@@ -232,9 +233,9 @@ export function computeOptimalBotCall(
       if (capturedSamples[s] >= c) hits += 1;
     }
     const probHit = hits / SIMULATIONS;
-    // Expected score with slight risk-adjusted utility
-    const bustPenalty = (1 - probHit) * (c * 0.12) / riskFactor;
-    const utility = c * Math.pow(probHit, 1 / riskFactor) - bustPenalty;
+    // Risk-adjusted expected score under +/- call rules
+    const adjHit = Math.pow(probHit, 1 / riskFactor);
+    const utility = c * (2 * adjHit - 1);
 
     if (utility > bestUtility) {
       bestUtility = utility;
@@ -245,9 +246,56 @@ export function computeOptimalBotCall(
   return bestCall;
 }
 
+interface MctsNode {
+  actor: SeatIndex;
+  visits: number;
+  totalValues: [number, number, number, number];
+  children: Map<CardValue, MctsNode>;
+}
+
+function createMctsNode(actor: SeatIndex): MctsNode {
+  return {
+    actor,
+    visits: 0,
+    totalValues: [0, 0, 0, 0],
+    children: new Map(),
+  };
+}
+
 /**
- * Determinizes unknown cards and runs fast Monte Carlo / IS-MCTS rollouts
- * to pick the optimal card for `seatIndex` in `state`.
+ * Estimates a bid-consistency likelihood weight for a determinized deal.
+ * Deals where opponents' remaining cards + captured points align with their bids get higher weight.
+ */
+function computeDealBeliefWeight(
+  hands: readonly CardValue[][],
+  calls: readonly number[],
+  captured: readonly number[],
+  mySeat: SeatIndex,
+): number {
+  let weight = 1.0;
+  const twoSigmaSq = 2 * 120 * 120;
+
+  for (let i = 0; i < 4; i += 1) {
+    if (i === mySeat) continue;
+    let potential = captured[i];
+    const oppHand = hands[i];
+    for (let j = 0; j < oppHand.length; j += 1) {
+      const c = oppHand[j];
+      if (c >= 90) potential += c + 95;
+      else if (c >= 75) potential += (c + 85) * 0.68;
+      else if (c >= 50) potential += (c + 70) * 0.32;
+      else potential += 12;
+    }
+    const diff = potential - calls[i];
+    weight *= Math.exp(-(diff * diff) / twoSigmaSq);
+  }
+
+  return Math.max(0.02, weight);
+}
+
+/**
+ * Determinizes unknown cards (using exact card counting + bid-consistent belief weighting)
+ * and runs Multi-Ply UCB1 IS-MCTS to pick the optimal card for `seatIndex` in `state`.
  */
 export function computeOptimalBotCard(
   state: GameState,
@@ -259,7 +307,6 @@ export function computeOptimalBotCard(
     return hand[0] ?? DECK_CARDS[0];
   }
 
-  // Collect all known cards: bot's hand + currentTrick
   const currentTrick = Array.isArray(state.currentTrick) ? state.currentTrick : [];
 
   // Mandatory rule: Trick 1 lead with card 1.
@@ -283,16 +330,17 @@ export function computeOptimalBotCard(
     }
   }
 
+  // #1 Exact Card Counting: combine own hand + currentTrick + playedCardsThisRound
   const known = new Set<CardValue>(hand);
   for (const play of currentTrick) {
     known.add(play.card);
   }
+  if (Array.isArray(state.playedCardsThisRound)) {
+    for (const played of state.playedCardsThisRound) {
+      known.add(played);
+    }
+  }
 
-  // Note: If we don't have full played-card history in GameState, we know how many
-  // cards each opponent holds (`state.seats[i].hand.length`).
-  // Any card in DECK_CARDS not in `known` is a candidate for opponents' hands
-  // (plus already-played cards from earlier tricks, which we exclude by only dealing
-  // `opp.hand.length` cards to each opponent).
   const unknownPool = DECK_CARDS.filter((c) => !known.has(c));
 
   const calls: [number, number, number, number] = [
@@ -314,170 +362,256 @@ export function computeOptimalBotCard(
     state.seats[3].totalScore,
   ];
 
-  // Identify who holds card 1 if it's still in unknownPool
   const oneInUnknown = unknownPool.includes(1);
   const starterSeat = state.roundStarterSeat;
 
-  const MAX_DETERMINIZATIONS = 240;
-  const TIME_BUDGET_MS = 25;
+  // #3 Multi-Ply UCB1 IS-MCTS Root
+  const root = createMctsNode(seatIndex);
+  const UCB_C = 95;
+  const MAX_ITERATIONS = 320;
+  const TIME_BUDGET_MS = 28;
+  const MAX_TREE_DEPTH = 8;
   const startTime = Date.now();
-
-  const cardScores = new Float64Array(hand.length);
-  let determinizations = 0;
+  let iterations = 0;
 
   while (
-    determinizations < MAX_DETERMINIZATIONS &&
+    iterations < MAX_ITERATIONS &&
     Date.now() - startTime < TIME_BUDGET_MS
   ) {
-    determinizations += 1;
+    iterations += 1;
+
+    // Sample determinized world
     const pool = [...unknownPool];
     shuffleInPlace(pool);
 
-    // Build determinized opponent hands
-    const baseHands: [CardValue[], CardValue[], CardValue[], CardValue[]] = [
+    const simHands: [CardValue[], CardValue[], CardValue[], CardValue[]] = [
       [],
       [],
       [],
       [],
     ];
-    baseHands[seatIndex] = [...hand];
+    simHands[seatIndex] = [...hand];
 
     let cursor = 0;
     for (let i = 0; i < 4; i += 1) {
       if (i === seatIndex) continue;
       const neededCount = state.seats[i].hand.length;
-      const oppHand = pool.slice(cursor, cursor + neededCount);
+      simHands[i] = pool.slice(cursor, cursor + neededCount);
       cursor += neededCount;
-      baseHands[i] = oppHand;
     }
 
-    // Enforce constraint: if 1 is unplayed and starterSeat is an opponent who hasn't played yet,
-    // ensure starterSeat holds 1.
+    // Enforce constraint: if 1 is unplayed on Trick 1 and starterSeat hasn't played yet, starterSeat holds 1.
     if (
       oneInUnknown &&
       starterSeat !== seatIndex &&
       state.trickNumber === 1 &&
       state.seats[starterSeat].hand.length > 0 &&
-      !baseHands[starterSeat].includes(1)
+      !simHands[starterSeat].includes(1)
     ) {
       for (let i = 0; i < 4; i += 1) {
         if (i === seatIndex || i === starterSeat) continue;
-        const idx = baseHands[i].indexOf(1);
-        if (idx !== -1 && baseHands[starterSeat].length > 0) {
-          const swap = baseHands[starterSeat][0];
-          baseHands[starterSeat][0] = 1;
-          baseHands[i][idx] = swap;
+        const idx = simHands[i].indexOf(1);
+        if (idx !== -1 && simHands[starterSeat].length > 0) {
+          const swap = simHands[starterSeat][0];
+          simHands[starterSeat][0] = 1;
+          simHands[i][idx] = swap;
           break;
         }
       }
     }
 
     for (let i = 0; i < 4; i += 1) {
-      baseHands[i].sort((a, b) => a - b);
+      simHands[i].sort((a, b) => a - b);
     }
 
-    // Evaluate each candidate card in `hand`
-    for (let cIdx = 0; cIdx < hand.length; cIdx += 1) {
-      const candidate = hand[cIdx];
-      const simHands: [CardValue[], CardValue[], CardValue[], CardValue[]] = [
-        [...baseHands[0]],
-        [...baseHands[1]],
-        [...baseHands[2]],
-        [...baseHands[3]],
-      ];
-      const simCaptured: [number, number, number, number] = [...baseCaptured];
+    // #2 Bid-Consistent Determinization Weight
+    const dealWeight = computeDealBeliefWeight(
+      simHands,
+      calls,
+      baseCaptured,
+      seatIndex,
+    );
 
-      // Play `candidate` into currentTrick
-      const candPos = simHands[seatIndex].indexOf(candidate);
-      if (candPos !== -1) simHands[seatIndex].splice(candPos, 1);
+    const simCaptured: [number, number, number, number] = [...baseCaptured];
+    let simTrickNum = state.trickNumber;
+    let trickPlays: TrickPlay[] = currentTrick.map((p) => ({ ...p }));
+    let actor: SeatIndex = seatIndex;
 
-      const trickPlays: TrickPlay[] = [
-        ...currentTrick,
-        { seatIndex, card: candidate },
-      ];
+    // Selection + Expansion along IS-MCTS tree
+    const path: MctsNode[] = [];
+    let node: MctsNode = root;
+    let depth = 0;
 
-      // Complete current trick
-      let nextSeat = ((seatIndex + 1) % 4) as SeatIndex;
+    while (depth < MAX_TREE_DEPTH && simHands[actor].length > 0) {
+      path.push(node);
+      const actorHand = simHands[actor];
+
+      // Legal moves for actor (Trick 1 lead must play 1 if held)
+      const legalMoves =
+        simTrickNum === 1 && trickPlays.length === 0 && actorHand.includes(1)
+          ? ([1] as CardValue[])
+          : actorHand;
+
+      // Check for untried move in node.children
+      let untriedCard: CardValue | null = null;
+      for (let i = 0; i < legalMoves.length; i += 1) {
+        if (!node.children.has(legalMoves[i])) {
+          untriedCard = legalMoves[i];
+          break;
+        }
+      }
+
+      let chosenCard: CardValue;
+      let expanded = false;
+
+      if (untriedCard !== null) {
+        chosenCard = untriedCard;
+        expanded = true;
+      } else {
+        // UCB1 selection among legalMoves present in node.children
+        let bestUcb = -Infinity;
+        chosenCard = legalMoves[0];
+        const logN = Math.log(node.visits + 1);
+        for (let i = 0; i < legalMoves.length; i += 1) {
+          const c = legalMoves[i];
+          const child = node.children.get(c)!;
+          const mean = child.totalValues[actor] / child.visits;
+          const ucb = mean + UCB_C * Math.sqrt(logN / child.visits);
+          if (ucb > bestUcb) {
+            bestUcb = ucb;
+            chosenCard = c;
+          }
+        }
+      }
+
+      // Apply chosenCard to simulation state
+      const pos = actorHand.indexOf(chosenCard);
+      if (pos !== -1) actorHand.splice(pos, 1);
+      trickPlays.push({ seatIndex: actor, card: chosenCard });
+
+      let nextActor: SeatIndex;
+      if (trickPlays.length < 4) {
+        nextActor = ((actor + 1) % 4) as SeatIndex;
+      } else {
+        let winner = trickPlays[0];
+        let pot = 0;
+        for (let i = 0; i < trickPlays.length; i += 1) {
+          pot += trickPlays[i].card;
+          if (trickPlays[i].card > winner.card) winner = trickPlays[i];
+        }
+        simCaptured[winner.seatIndex] += pot;
+        simTrickNum += 1;
+        trickPlays = [];
+        nextActor = winner.seatIndex;
+      }
+
+      let childNode = node.children.get(chosenCard);
+      if (!childNode) {
+        childNode = createMctsNode(nextActor);
+        node.children.set(chosenCard, childNode);
+      }
+
+      node = childNode;
+      actor = nextActor;
+      depth += 1;
+
+      if (expanded) {
+        path.push(node);
+        break;
+      }
+    }
+
+    // Rollout remaining plays in current trick (if any) + remaining tricks
+    if (trickPlays.length > 0 && simTrickNum <= 5) {
+      let nextSeat = actor;
       while (trickPlays.length < 4) {
-        const oppHand = simHands[nextSeat];
-        if (oppHand.length > 0) {
-          const needed = Math.max(0, calls[nextSeat] - simCaptured[nextSeat]);
-          const chosen = chooseRolloutCard(
-            oppHand,
-            trickPlays,
-            needed,
-            state.trickNumber,
-          );
-          const pos = oppHand.indexOf(chosen);
-          if (pos !== -1) oppHand.splice(pos, 1);
+        const sHand = simHands[nextSeat];
+        if (sHand.length > 0) {
+          const oppNeeded = Math.max(0, calls[nextSeat] - simCaptured[nextSeat]);
+          const chosen = chooseRolloutCard(sHand, trickPlays, oppNeeded, simTrickNum);
+          const pos = sHand.indexOf(chosen);
+          if (pos !== -1) sHand.splice(pos, 1);
           trickPlays.push({ seatIndex: nextSeat, card: chosen });
         }
         nextSeat = ((nextSeat + 1) % 4) as SeatIndex;
       }
-
-      // Resolve current trick
       let winner = trickPlays[0];
       let pot = 0;
       for (let i = 0; i < trickPlays.length; i += 1) {
         pot += trickPlays[i].card;
-        if (trickPlays[i].card > winner.card) {
-          winner = trickPlays[i];
-        }
+        if (trickPlays[i].card > winner.card) winner = trickPlays[i];
       }
       simCaptured[winner.seatIndex] += pot;
-      let leader = winner.seatIndex;
+      simTrickNum += 1;
+      actor = winner.seatIndex;
+    }
 
-      // Simulate remaining tricks
-      for (let t = state.trickNumber + 1; t <= 5; t += 1) {
-        const tPlays: TrickPlay[] = [];
-        for (let offset = 0; offset < 4; offset += 1) {
-          const s = ((leader + offset) % 4) as SeatIndex;
-          const sHand = simHands[s];
-          if (sHand.length === 0) continue;
-          const needed = Math.max(0, calls[s] - simCaptured[s]);
-          const chosen = chooseRolloutCard(sHand, tPlays, needed, t);
-          const pos = sHand.indexOf(chosen);
-          if (pos !== -1) sHand.splice(pos, 1);
-          tPlays.push({ seatIndex: s, card: chosen });
-        }
-        if (tPlays.length === 0) break;
-        let tWinner = tPlays[0];
-        let tPot = 0;
-        for (let i = 0; i < tPlays.length; i += 1) {
-          tPot += tPlays[i].card;
-          if (tPlays[i].card > tWinner.card) tWinner = tPlays[i];
-        }
-        simCaptured[tWinner.seatIndex] += tPot;
-        leader = tWinner.seatIndex;
+    let leader = actor;
+    for (let t = simTrickNum; t <= 5; t += 1) {
+      const tPlays: TrickPlay[] = [];
+      for (let offset = 0; offset < 4; offset += 1) {
+        const s = ((leader + offset) % 4) as SeatIndex;
+        const sHand = simHands[s];
+        if (sHand.length === 0) continue;
+        const sNeeded = Math.max(0, calls[s] - simCaptured[s]);
+        const chosen = chooseRolloutCard(sHand, tPlays, sNeeded, t);
+        const pos = sHand.indexOf(chosen);
+        if (pos !== -1) sHand.splice(pos, 1);
+        tPlays.push({ seatIndex: s, card: chosen });
       }
-
-      // Score terminal state: own reward - opponent blocking penalty
-      const myCall = calls[seatIndex];
-      const myReward = simCaptured[seatIndex] >= myCall ? myCall : 0;
-      let oppPenalty = 0;
-      for (let i = 0; i < 4; i += 1) {
-        if (i === seatIndex) continue;
-        if (simCaptured[i] >= calls[i]) {
-          // Weight blocking opponents who are higher in totalScore
-          const leaderWeight = totalScores[i] >= totalScores[seatIndex] ? 0.25 : 0.15;
-          oppPenalty += calls[i] * leaderWeight;
-        }
+      if (tPlays.length === 0) break;
+      let tWinner = tPlays[0];
+      let tPot = 0;
+      for (let i = 0; i < tPlays.length; i += 1) {
+        tPot += tPlays[i].card;
+        if (tPlays[i].card > tWinner.card) tWinner = tPlays[i];
       }
+      simCaptured[tWinner.seatIndex] += tPot;
+      leader = tWinner.seatIndex;
+    }
 
-      cardScores[cIdx] += myReward - oppPenalty;
+    // Compute utility vector for all 4 seats under +/- call scoring
+    const roundScores: [number, number, number, number] = [0, 0, 0, 0];
+    for (let i = 0; i < 4; i += 1) {
+      roundScores[i] = simCaptured[i] >= calls[i] ? calls[i] : -calls[i];
+    }
+
+    const utilities: [number, number, number, number] = [0, 0, 0, 0];
+    for (let i = 0; i < 4; i += 1) {
+      let oppTerm = 0;
+      for (let j = 0; j < 4; j += 1) {
+        if (i === j) continue;
+        const leaderWeight = totalScores[j] >= totalScores[i] ? 0.25 : 0.15;
+        oppTerm += roundScores[j] * leaderWeight;
+      }
+      utilities[i] = roundScores[i] - oppTerm;
+    }
+
+    // Backpropagate weighted utility up the path
+    for (let p = 0; p < path.length; p += 1) {
+      const pNode = path[p];
+      pNode.visits += dealWeight;
+      for (let s = 0; s < 4; s += 1) {
+        pNode.totalValues[s] += dealWeight * utilities[s];
+      }
     }
   }
 
-  let bestIdx = 0;
+  // Select root move with highest expected value (with visit count tie-breaker)
+  let bestCard = hand[0];
   let bestScore = -Infinity;
   for (let i = 0; i < hand.length; i += 1) {
-    if (cardScores[i] > bestScore) {
-      bestScore = cardScores[i];
-      bestIdx = i;
+    const c = hand[i];
+    const child = root.children.get(c);
+    if (!child || child.visits <= 0) continue;
+    const avgVal = child.totalValues[seatIndex] / child.visits;
+    if (avgVal > bestScore) {
+      bestScore = avgVal;
+      bestCard = c;
     }
   }
 
-  return hand[bestIdx];
+  return bestCard;
 }
 
 const LEGACY_WIN_PROB = [

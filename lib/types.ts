@@ -137,6 +137,7 @@ export interface GameState {
   emittedAt: number;
   seats: [SeatState, SeatState, SeatState, SeatState];
   currentTrick: TrickPlay[];
+  playedCardsThisRound?: CardValue[];
   lastTrickWinnerSeat: SeatIndex | null;
   lastTrickPoints: number;
   roundHistory: RoundRecord[];

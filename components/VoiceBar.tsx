@@ -646,7 +646,7 @@ export function VoiceBar({
             serverUrl={serverUrl}
             token={activeToken}
             connect={true}
-            audio={AUDIO_CAPTURE_DEFAULTS}
+            audio={isMicActive ? AUDIO_CAPTURE_DEFAULTS : false}
             video={false}
             options={roomOptions}
             onError={(err) => {
@@ -967,7 +967,7 @@ export function VoiceBar({
           serverUrl={serverUrl}
           token={activeToken}
           connect={true}
-          audio={AUDIO_CAPTURE_DEFAULTS}
+          audio={isMicActive ? AUDIO_CAPTURE_DEFAULTS : false}
           video={false}
           options={roomOptions}
           onError={(err) => {

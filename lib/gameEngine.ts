@@ -295,6 +295,7 @@ function startRound(
     emittedAt: timestamp,
     seats: nextSeats,
     currentTrick: [],
+    playedCardsThisRound: [],
     lastTrickWinnerSeat: null,
     lastTrickPoints: 0,
     roundHistory: overrideRoundHistory ?? [...baseState.roundHistory],
@@ -599,6 +600,17 @@ export function isValidGameState(value: unknown): value is GameState {
     }
     seenTrickSeats.add(play.seatIndex);
     seenActiveCards.add(play.card);
+  }
+
+  if (value.playedCardsThisRound !== undefined) {
+    if (!Array.isArray(value.playedCardsThisRound) || value.playedCardsThisRound.length > 20) {
+      return false;
+    }
+    for (const c of value.playedCardsThisRound) {
+      if (!isValidCardValue(c)) {
+        return false;
+      }
+    }
   }
 
   if (
@@ -1010,6 +1022,11 @@ export function applyAction(
         { seatIndex, card: action.card },
       ];
 
+      const nextPlayedCards: CardValue[] = [
+        ...(Array.isArray(state.playedCardsThisRound) ? state.playedCardsThisRound : []),
+        action.card,
+      ];
+
       if (nextTrick.length < 4) {
         return {
           ...state,
@@ -1019,6 +1036,7 @@ export function applyAction(
           emittedAt: timestamp,
           seats: nextSeats,
           currentTrick: nextTrick,
+          playedCardsThisRound: nextPlayedCards,
         };
       }
 
@@ -1043,6 +1061,7 @@ export function applyAction(
         emittedAt: timestamp,
         seats: nextSeats,
         currentTrick: nextTrick,
+        playedCardsThisRound: nextPlayedCards,
         lastTrickWinnerSeat: winnerPlay.seatIndex,
         lastTrickPoints: trickPoints,
       };

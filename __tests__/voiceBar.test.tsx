@@ -362,9 +362,13 @@ describe('components/VoiceBar (F-18, F-19, F-20, F-21, F-22)', () => {
     );
     expect(screen.getByTestId('mock-room-audio-renderer')).toBeTruthy();
 
-    // Verify DSP audio capture options and initial roomOptions reference
+    // Verify mic starts muted on connect while DSP audio capture options are configured in roomOptions
     const firstRoomProps = livekitMockState.lastRoomProps;
-    expect(firstRoomProps?.audio).toEqual({
+    expect(firstRoomProps?.audio).toBe(false);
+    expect(
+      (firstRoomProps?.options as { audioCaptureDefaults?: unknown } | undefined)
+        ?.audioCaptureDefaults,
+    ).toEqual({
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,
